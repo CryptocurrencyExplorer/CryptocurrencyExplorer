@@ -1,6 +1,6 @@
 Cryptocurrency Explorer
 ==========
-https://github.com/Lvl4Sword/CryptocurrencyExplorer
+https://github.com/CryptocurrencyExplorer/CryptocurrencyExplorer
 
 
 Welcome to Cryptocurrency Explorer!
@@ -15,7 +15,7 @@ Cryptocurrency Explorer is a continuation and reimagining of Bitcoin-Abe
 License
 ==========
 The GNU Affero General Public License
-( https://github.com/Lvl4Sword/CryptocurrencyExplorer/blob/main/LICENSE )
+( https://github.com/CryptocurrencyExplorer/CryptocurrencyExplorer/blob/main/LICENSE )
 requires whoever modifies this code and runs it on a server to make the
 modified code available to users of the server.
 
