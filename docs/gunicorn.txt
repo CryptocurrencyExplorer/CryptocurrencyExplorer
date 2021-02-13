@@ -1,0 +1,8 @@
+--limit-request-line
+( https://docs.gunicorn.org/en/stable/settings.html#limit-request-line )
+is highly useful.
+
+This can be set to 256 ( or lower, test this! ) for now until at least the 1.0 release.
+
+This may be edited/changed between 1.0 and 2.0 as new features
+come into play.

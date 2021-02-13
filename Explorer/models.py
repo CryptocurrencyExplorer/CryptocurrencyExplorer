@@ -1,0 +1,168 @@
+from app import db
+
+
+class Addresses(db.Model):
+    __tablename__ = 'addresses'
+    id = db.Column(db.Integer, primary_key=True)
+    address = db.Column(db.String,
+                        unique=False,
+                        nullable=False)
+    amount = db.Column(db.Numeric,
+                       unique=False,
+                       nullable=False)
+    balance = db.Column(db.Numeric,
+                        unique=False,
+                        nullable=False)
+    in_block = db.Column(db.Integer,
+                         unique=False,
+                         nullable=False)
+    transaction = db.Column(db.String,
+                            unique=False,
+                            nullable=False)
+    datetime = db.Column(db.Integer,
+                         unique=False,
+                         nullable=False)
+
+
+class AddressSummary(db.Model):
+    __tablename__ = 'address_summary'
+    id = db.Column(db.Integer, primary_key=True)
+    address = db.Column(db.String,
+                        unique=True,
+                        nullable=False)
+    balance = db.Column(db.Numeric,
+                        unique=False,
+                        nullable=False)
+    transactions_in = db.Column(db.Integer,
+                                unique=False,
+                                nullable=False)
+    received = db.Column(db.Numeric,
+                         unique=False,
+                         nullable=False)
+    transactions_out = db.Column(db.Integer,
+                                 unique=False,
+                                 nullable=False)
+    sent = db.Column(db.Numeric,
+                     unique=False,
+                     nullable=False)
+
+
+class Blocks(db.Model):
+    __tablename__ = 'blocks'
+    id = db.Column(db.Integer, primary_key=True)
+    height = db.Column(db.Integer,
+                       unique=True,
+                       nullable=False)
+    hash = db.Column(db.String,
+                     nullable=False)
+    version = db.Column(db.Integer,
+                        unique=False,
+                        nullable=False)
+    prevhash = db.Column(db.String,
+                         unique=False,
+                         nullable=False)
+    nexthash = db.Column(db.String,
+                         unique=False,
+                         nullable=False)
+    merkleroot = db.Column(db.String,
+                           unique=False,
+                           nullable=False)
+    time = db.Column(db.Integer,
+                     unique=False,
+                     nullable=False)
+    bits = db.Column(db.String,
+                     unique=False,
+                     nullable=False)
+    nonce = db.Column(db.BIGINT,
+                      unique=False,
+                      nullable=False)
+    size = db.Column(db.Integer,
+                     unique=False,
+                     nullable=False)
+    difficulty = db.Column(db.Numeric,
+                           unique=False,
+                           nullable=False)
+    cumulative_difficulty = db.Column(db.Numeric,
+                                      unique=False,
+                                      nullable=False)
+    value_out = db.Column(db.Numeric,
+                          unique=False,
+                          nullable=False)
+    transaction_fees = db.Column(db.Numeric,
+                                 unique=False,
+                                 nullable=False)
+    total_out = db.Column(db.Numeric,
+                          unique=False,
+                          nullable=False)
+
+
+class BlockTXs(db.Model):
+    __tablename__ = 'blocktxs'
+    id = db.Column(db.Integer,
+                   primary_key=True)
+    block_height = db.Column(db.Integer,
+                             nullable=False)
+    n = db.Column(db.Integer,
+                  nullable=False)
+    tx_id = db.Column(db.String,
+                      nullable=False)
+
+
+class TXs(db.Model):
+    __tablename__ = 'txs'
+    id = db.Column(db.Integer,
+                   primary_key=True)
+    txid = db.Column(db.String,
+                     unique=False,
+                     nullable=False)
+    version = db.Column(db.Integer,
+                        unique=False,
+                        nullable=False)
+    locktime = db.Column(db.Integer,
+                         unique=False,
+                         nullable=False)
+
+
+class TxOut(db.Model):
+    __tablename__ = 'txout'
+    id = db.Column(db.Integer, primary_key=True)
+    tx_id = db.Column(db.String)
+    n = db.Column(db.Integer,
+                  unique=False,
+                  nullable=False)
+    value = db.Column(db.Numeric,
+                      unique=False,
+                      nullable=False)
+    scriptpubkey = db.Column(db.String,
+                             unique=False,
+                             nullable=False)
+    spent = db.Column(db.Boolean,
+                      unique=False,
+                      nullable=False)
+
+
+class TXIn(db.Model):
+    __tablename__ = 'txin'
+    tx_id = db.Column(db.String,
+                      primary_key=True)
+    n = db.Column(db.Integer,
+                  unique=False,
+                  nullable=False)
+    prevout_hash = db.Column(db.String,
+                             unique=False,
+                             nullable=False)
+    prevout_n = db.Column(db.Integer,
+                          unique=False,
+                          nullable=False)
+    scriptsig = db.Column(db.String,
+                          unique=False,
+                          nullable=False)
+    sequence = db.Column(db.Integer,
+                         unique=False,
+                         nullable=False)
+    witness = db.Column(db.String,
+                        unique=False,
+                        nullable=False)
+    prevout_tx_id = db.Column(db.String,
+                              unique=False,
+                              nullable=False)

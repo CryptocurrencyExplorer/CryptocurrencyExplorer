@@ -1,0 +1,14 @@
+create database db;
+alter user postgres with encrypted password 'DO_NOT_USE_postgresql_db_password_DO_NOT_USE';
+grant all privileges on database db to postgres;
+
+sudo -u postgres psql
+
+To connect to the database:
+postgres=# \c db
+
+You should get:
+You are now connected to database "db" as user "postgres".
+
+In order to see the tables once first_run.py is started:
+db=# \dt

@@ -1,0 +1,33 @@
+a:link {
+    color: green !important;
+}
+
+a:visited {
+    color: limegreen !important;
+}
+
+body, body :not(iframe) {
+    background-color: #181a1b !important;
+    border-color: #776e62 !important;
+    color: #e8e6e3 !important;
+}
+.shortlink {
+    font-size: smaller;
+}
+.addrhist .escrow .balance {
+    opacity: 0.5;
+    filter: alpha(opacity = 50);
+}
+.formtest {
+    text-align: center;
+}
+.woodcenter {
+    text-align: center;
+}
+.error {
+    text-align: center;
+    font-weight: bolder;
+}
+.footer {
+    text-align: center;
+}
