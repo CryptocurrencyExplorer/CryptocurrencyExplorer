@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Block{{ super() }}{% endblock %}
+
+{% block head %}
+{{ super() }}
+{% endblock %}
+
+{% block additional_text %}<a href="/block/{{ the_block['hash'] }}">{{ config.COIN_NAME }}</a> {{ the_block['height'] }}{% endblock %}
+
+{% block the_form %}
+{% endblock %}
+
+{% block start_body %}
+{{ super() }}
+{% endblock %}
+
+{% block additional_body %}
+            <p>
+                Hash: {{ the_block['hash'] }}<br />{% if previous_block_hash is not none %}
+                Previous Block: <a href="/block/{{ previous_block_hash }}">{{ previous_block_hash }}</a><br />{% endif %}
+
+                {% if next_block_hash is not none %}
+                Next Block: <a href="/block/{{ next_block_hash }}">{{ next_block_hash }}</a><br />{% endif %}
+
+                Height: {{ the_block['height'] }}<br />
+                Version: {{ the_block['version'] }}<br />
+                Transaction Merkle Root: {{ the_block['merkleroot'] }}<br />
+                Time: {{ the_block['time'] }} ({{ format_time(the_block['time']) }})<br />
+                Difficulty: {{ format_difficulty(the_block['difficulty']) }} (Bits: {{ the_block['bits'] }})<br />
+                Cumulative Difficulty: ?<br />
+                Nonce: {{ the_block['nonce'] }}<br />
+                Transactions: {{ format_transaction_length(the_block['tx']) }}<br />
+                Value out: {{ value_out }}<br />
+                Transaction Fees: ?<br />
+            </p>
+{% endblock %}
+
+{% block footer %}{{ super() }}{% endblock %}

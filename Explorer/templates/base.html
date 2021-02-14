@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+    {% block head %}
+    <head>
+        <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.ico') }}" />
+        <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+        <meta name="description" content="View transactions, blocks, addresses, and more." />
+        <meta name="keywords" content="{{ config.PROGRAM_NAME }}, transactions, cryptocurrency, crypto, currency, {{ config.COIN_NAME }}" />
+        <meta name="author" content="See https://github.com/Lvl4Sword/CryptocurrencyExplorer/" />
+        <meta property="og:title" content="{{ config.COIN_NAME }} Explorer" />
+        <meta property="og:description" content="View transactions, blocks, addresses, and more." />
+        <meta property="og:url" content="{{ request.base_url }}" />
+        <meta property="og:image" content="{{ url_for('static', filename='images/icon.png', _external=True) }}" />
+        <meta property="og:type" content="website" />
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/abe.css') }}">
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
+        <title>{% block title %}{% endblock %} | {{ config.PROGRAM_NAME }}</title>
+    </head>{% endblock %}
+    <body>
+        {% block start_body %}
+        <div class="container">
+            <h1 class=woodcenter><a href="/">
+                <img src="{{ url_for('static', filename='images/cryptocurrency.svg') }}" alt="{{ config.COIN_NAME }} logo" title="{{ config.COIN_NAME }} logo" width="52px" height="52px"/></a><a href="/"> {% block additional_text %}{% endblock %}</a>
+            </h1>{% endblock %}
+            {% block the_form %}
+            <div class="formtest">
+                <form method="post">
+                    <p>
+                        {{ form.hidden_tag() }}
+                        {{ form.search(size=64, maxlength=64) }}
+                        {{ form.submit() }}
+                        <br />Address or hash search requires at least the first 6 characters.
+                        <br />Count is limited to a maximum of 500 blocks.
+                    </p>
+                </form>
+            </div>{% endblock %}
+            {% block additional_body %}
+            {% endblock %}
+        </div>
+        {% block footer %}
+        <div class="footer">
+            <b>Check out the <a href="https://github.com/Lvl4Sword/CryptocurrencyExplorer">source code!</a></b>
+        </div>
+        {% endblock %}
+    </body>
+</html>

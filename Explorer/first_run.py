@@ -129,22 +129,50 @@ def lets_boogy(the_blocks):
 
 
 def detect_rpc():
+    rpcuser = False
+    rpcpassword = False
+    rpcport = False
     found_coins = {}
     for coin in bootstrap.values():
         coin = coin.lower()
-        # rpc folder found
+        # rpc folder was found
+        # "Why not use pathlib?" - Because https://docs.python.org/3/library/pathlib.html#pathlib.Path.home uses ...
+        # os.path.expanduser() anyway
         if os.path.isdir(os.path.expanduser(f'~/.{coin}')):
             found_coins[coin] = True
     how_many_coins = len(found_coins)
     # If only one is found, good chance this is what the user wants to use
     if how_many_coins == 1:
+        for coin in found_coins.keys():
+            the_coin = coin
+            break
         # If only one folder is found, check if a config file exists in it
-        if os.path.isfile(os.path.expanduser(f'~/.{coin}/{coin}.conf')):
+        if os.path.isfile(os.path.expanduser(f'~/.{the_coin}/{the_coin}.conf')):
             # If the config file is found, open it and extract rpcuser/rpcpassword/rpcport
-            with open(os.path.expanduser(f'~/.{coin}/{coin}.conf'), 'r') as rpc_file:
+            with open(os.path.expanduser(f'~/.{the_coin}/{the_coin}.conf'), 'r') as rpc_file:
                 full_rpc_file = rpc_file.readlines()
             for line in full_rpc_file:
-                if line.strip() in ['rpcuser', 'rpcpassword', 'rpcport']:
+                line = line.strip()
+                if line.startswith('rpcuser'):
+                    rpcuser = line.split('=')[1]
+                elif line.startswith('rpcpassword'):
+                    rpcpassword = line.split('=')[1]
+                elif line.startswith('rpcport'):
+                    rpcport = line.split('=')[1]
+            # RPC file has at least one variable missing
+            # Nothing we can do here outside of editing user's daemon config
+            # Which, we're not doing because that would at the very least, be very rude.
+            if any([rpcuser, rpcpassword, rpcport]) == False:
+                print(f'~/.{the_coin}/{the_coin}.conf is missing one of these: rpcuser/rpcpassword/rpcport')
+            # RPC file does NOT have any variable we're looking for missing!
+            # Let's write these into the config file
+            else:
+    else:
+
+
+
+
+
 
     # No folders were found automatically, or more than one was found
     # User intervention is required, because we can't tell what they want
@@ -152,11 +180,14 @@ def detect_rpc():
 
 
 
-def detect_config():
-    for each in [rpcuser, rpcpassword, rpcport]:
+def detect_rpc_config():
+    for each in [rpcuser, rpcuser, rpcpassword]:
         if each is None:
-            print("Go into config.py and change the rpc information so it's valid and not None")
-            sys.exit()
+            detect_rpc()
+            break
+
+
+def detect_flask_config():
     if app_key == rb"""app_key""":
         print("Go into config.py and change the app_key!")
         sys.exit()
@@ -187,8 +218,11 @@ def detect_tables():
 
 
 if __name__ == '__main__':
+    if autodetect_rpc:
+        detect_rpc()
     if autodetect_config:
         detect_config()
+
     try:
         cryptocurrency = AuthServiceProxy(f"http://{rpcuser}:{rpcpassword}@127.0.0.1:{rpcport}")
     except JSONRPCException:

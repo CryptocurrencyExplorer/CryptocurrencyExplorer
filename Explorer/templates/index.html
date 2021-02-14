@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Index{{ super() }}{% endblock %}
+
+{% block head %}
+{{ super() }}
+{% endblock %}
+
+{% block additional_text %}{{ config.COIN_NAME }}{% endblock %}
+
+{% block the_form %}
+{{ super() }}
+{% endblock %}
+
+{% block start_body %}
+{{ super() }}
+{% endblock %}
+
+{% block additional_body %}
+            <table class="table table-striped table-hover"><tr><th>Block</th><th>Time (UTC)</th><th>Transactions</th><th>Value Out</th><th>Difficulty</th><th>Outstanding</th><th>Average Age</th></tr>
+                {% for each in front_page_blocks %}
+                 <tr><td><a href="/block/{{ each[1]['block_hash'] }}">{{ each[0] }}</a></td><td>{{ format_time(each[1]['formatted_time']) }}</td><td>{{ each[1]['total_transactions'] }}</td><td>{{ each[1]['total_out'] }}</td><td>{{ each[1]['difficulty'] }}</td><td>?</td><td>?</td></tr>
+                {% endfor %}
+            </table>
+{% endblock %}
+
+{% block footer %}{{ super() }}{% endblock %}

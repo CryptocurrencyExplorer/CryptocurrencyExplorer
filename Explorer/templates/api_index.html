@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Index{{ super() }}{% endblock %}
+
+{% block head %}
+{{ super() }}
+{% endblock %}
+
+{% block additional_text %}Cryptocurrency Explorer{% endblock %}
+
+{% block the_form %}
+{% endblock %}
+
+{% block start_body %}
+{{ super() }}
+{% endblock %}
+
+{% block additional_body %}
+            <p>Supported APIs:</p>
+            <ul>
+                <li><a href="/api/totaltransactions">/api/totaltransactions</a> - Total number of all transactions</li>
+                <li><a href="/api/totalcoins">/api/totalcoins</a> - Amount of all coins on the network</li>
+                <li><a href="/api/confirmations/">/api/confirmations/{BLOCK HASH} OR {BLOCK HEIGHT}</a> - Total confirmations for the block hash/block height</li>
+                <li><a href="/api/validateaddress/">/api/validateaddress/{ADDRESS}</a> - Checks an address for validity.</li>
+            </ul>
+{% endblock %}
+
+{% block footer %}{{ super() }}{% endblock %}
