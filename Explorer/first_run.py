@@ -167,13 +167,6 @@ def detect_rpc():
             # RPC file does NOT have any variable we're looking for missing!
             # Let's write these into the config file
             else:
-    else:
-
-
-
-
-
-
     # No folders were found automatically, or more than one was found
     # User intervention is required, because we can't tell what they want
     else:
@@ -219,9 +212,9 @@ def detect_tables():
 
 if __name__ == '__main__':
     if autodetect_rpc:
-        detect_rpc()
+        detect_rpc_config()
     if autodetect_config:
-        detect_config()
+        detect_flask_config()
 
     try:
         cryptocurrency = AuthServiceProxy(f"http://{rpcuser}:{rpcpassword}@127.0.0.1:{rpcport}")

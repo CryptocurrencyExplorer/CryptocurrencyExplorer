@@ -25,8 +25,8 @@ application.debug = True
 application.logger.setLevel(logging.INFO)
 application.secret_key = app_key
 # check blockchain/README.md for this
-app.config['COIN_NAME'] = ''
-importlib.import_module('blockchain', app.config['COIN_NAME'].lower())
+application.config['COIN_NAME'] = ''
+importlib.import_module('blockchain', application.config['COIN_NAME'].lower())
 application.config['MAX_CONTENT_LENGTH'] = 256
 application.config['PROGRAM_NAME'] = 'Cryptocurrency Explorer'
 application.config['SESSION_COOKIE_NAME'] = 'csrf_token'
@@ -38,7 +38,7 @@ application.jinja_env.trim_blocks = True
 application.jinja_env.lstrip_blocks = True
 # Set this when using HTTPS
 # app.config['SESSION_COOKIE_SECURE'] = True
-application.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+application.wsgi_app = ProxyFix(application.wsgi_app, x_proto=1, x_host=1)
 csrf = CSRFProtect(application)
 db = SQLAlchemy(application)
 
