@@ -164,20 +164,49 @@ def detect_rpc():
             # Which, we're not doing because that would at the very least, be very rude.
             if any([rpcuser, rpcpassword, rpcport]) == False:
                 print(f'~/.{the_coin}/{the_coin}.conf is missing one of these: rpcuser/rpcpassword/rpcport')
-            # RPC file does NOT have any variable we're looking for missing!
+            # RPC file is NOT missing any variable we're looking for!
             # Let's write these into the config file
             else:
+                current_file_dir = os.path.dirname(os.path.abspath(__file__))
+                config_py = os.path.join(current_file_dir, 'config.py')
+                with open(os.path.expanduser(config_py), 'r') as config_file:
+                    full_config_file = config_file.readlines()
+                how_many_rpc = 0
+                for each_index in full_config_file:
+                    if each_index.startswith('rpc'):
+                        how_many_rpc += 1
+                if how_many_rpc == 3:
+                    config_file_temp_list = []
+                    for each_line in full_config_file:
+                        if each_line.startswith('rpcuser'):
+                            config_file_temp_list.append(f'rpcuser={rpcuser}\n')
+                        elif each_line.startswith('rpcpassword'):
+                            config_file_temp_list.append(f'rpcpassword={rpcpassword}\n')
+                        elif each_line.startswith('rpcport'):
+                            config_file_temp_list.append(f'rpcport={rpcport}\n')
+                        else:
+                            config_file_temp_list.append(each_line)
+                    with open(os.path.expanduser(config_py), 'w') as config_file2:
+                        for each_line2 in config_file_temp_list:
+                            config_file2.write(each_line2)
+                    return [True, 'complete']
+                # config file was manually edited and is missing rpc configurations
+                # Nothing we can do in an automated fashion.
+                else:
+                    return [False, 'config_missing_rpc']
+        # One folder found, no config file exists that we know of
+        else:
+            return [False, 'rpc_config_file_missing']
     # No folders were found automatically, or more than one was found
     # User intervention is required, because we can't tell what they want
     else:
+        return [False, 'rpc_folder_missing']
 
 
 
 def detect_rpc_config():
-    for each in [rpcuser, rpcuser, rpcpassword]:
-        if each is None:
-            detect_rpc()
-            break
+    if any(rpc is None for rpc in [rpcuser, rpcpassword, rpcport]):
+        detect_rpc()
 
 
 def detect_flask_config():
@@ -200,6 +229,7 @@ def detect_coin(cryptocurrency):
 
 
 def detect_tables():
+    # TODO - Need to throw this in a try/except in case the database isn't setup
     engine = create_engine(database_uri)
     inspector = inspect(engine)
     detected_tables = inspector.get_table_names()
@@ -215,7 +245,6 @@ if __name__ == '__main__':
         detect_rpc_config()
     if autodetect_config:
         detect_flask_config()
-
     try:
         cryptocurrency = AuthServiceProxy(f"http://{rpcuser}:{rpcpassword}@127.0.0.1:{rpcport}")
     except JSONRPCException:
