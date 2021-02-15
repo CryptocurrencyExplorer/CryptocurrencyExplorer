@@ -3,13 +3,14 @@ bootstrap = {'000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f':
              '30758383eae55ae5c7752b73388c1c85bdfbe930ad25ad877252841ed1e734a4': 'Woodcoin'}
 
 
-class Bitcoin():
+class Bitcoin:
     initial_transaction = ''
 
 
-class Litecoin():
+class Litecoin:
     initial_transaction = ''
 
 
-class Woodcoin():
-    initial_transaction = ''
+class Woodcoin:
+    # Woodcoin's initial transaction is empty
+    initial_transaction = []

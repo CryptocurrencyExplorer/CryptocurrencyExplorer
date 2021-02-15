@@ -128,87 +128,6 @@ def lets_boogy(the_blocks):
         print(f"committed block {block_height}")
 
 
-def detect_rpc():
-    rpcuser = False
-    rpcpassword = False
-    rpcport = False
-    found_coins = {}
-    for coin in bootstrap.values():
-        coin = coin.lower()
-        # rpc folder was found
-        # "Why not use pathlib?" - Because https://docs.python.org/3/library/pathlib.html#pathlib.Path.home uses ...
-        # os.path.expanduser() anyway
-        if os.path.isdir(os.path.expanduser(f'~/.{coin}')):
-            found_coins[coin] = True
-    how_many_coins = len(found_coins)
-    # If only one is found, good chance this is what the user wants to use
-    if how_many_coins == 1:
-        for coin in found_coins.keys():
-            the_coin = coin
-            break
-        # If only one folder is found, check if a config file exists in it
-        if os.path.isfile(os.path.expanduser(f'~/.{the_coin}/{the_coin}.conf')):
-            # If the config file is found, open it and extract rpcuser/rpcpassword/rpcport
-            with open(os.path.expanduser(f'~/.{the_coin}/{the_coin}.conf'), 'r') as rpc_file:
-                full_rpc_file = rpc_file.readlines()
-            for line in full_rpc_file:
-                line = line.strip()
-                if line.startswith('rpcuser'):
-                    rpcuser = line.split('=')[1]
-                elif line.startswith('rpcpassword'):
-                    rpcpassword = line.split('=')[1]
-                elif line.startswith('rpcport'):
-                    rpcport = line.split('=')[1]
-            # RPC file has at least one variable missing
-            # Nothing we can do here outside of editing user's daemon config
-            # Which, we're not doing because that would at the very least, be very rude.
-            if any([rpcuser, rpcpassword, rpcport]) == False:
-                print(f'~/.{the_coin}/{the_coin}.conf is missing one of these: rpcuser/rpcpassword/rpcport')
-            # RPC file is NOT missing any variable we're looking for!
-            # Let's write these into the config file
-            else:
-                current_file_dir = os.path.dirname(os.path.abspath(__file__))
-                config_py = os.path.join(current_file_dir, 'config.py')
-                with open(os.path.expanduser(config_py), 'r') as config_file:
-                    full_config_file = config_file.readlines()
-                how_many_rpc = 0
-                for each_index in full_config_file:
-                    if each_index.startswith('rpc'):
-                        how_many_rpc += 1
-                if how_many_rpc == 3:
-                    config_file_temp_list = []
-                    for each_line in full_config_file:
-                        if each_line.startswith('rpcuser'):
-                            config_file_temp_list.append(f'rpcuser={rpcuser}\n')
-                        elif each_line.startswith('rpcpassword'):
-                            config_file_temp_list.append(f'rpcpassword={rpcpassword}\n')
-                        elif each_line.startswith('rpcport'):
-                            config_file_temp_list.append(f'rpcport={rpcport}\n')
-                        else:
-                            config_file_temp_list.append(each_line)
-                    with open(os.path.expanduser(config_py), 'w') as config_file2:
-                        for each_line2 in config_file_temp_list:
-                            config_file2.write(each_line2)
-                    return [True, 'complete']
-                # config file was manually edited and is missing rpc configurations
-                # Nothing we can do in an automated fashion.
-                else:
-                    return [False, 'config_missing_rpc']
-        # One folder found, no config file exists that we know of
-        else:
-            return [False, 'rpc_config_file_missing']
-    # No folders were found automatically, or more than one was found
-    # User intervention is required, because we can't tell what they want
-    else:
-        return [False, 'rpc_folder_missing']
-
-
-
-def detect_rpc_config():
-    if any(rpc is None for rpc in [rpcuser, rpcpassword, rpcport]):
-        detect_rpc()
-
-
 def detect_flask_config():
     if app_key == rb"""app_key""":
         print("Go into config.py and change the app_key!")
@@ -241,8 +160,6 @@ def detect_tables():
 
 
 if __name__ == '__main__':
-    if autodetect_rpc:
-        detect_rpc_config()
     if autodetect_config:
         detect_flask_config()
     try:
