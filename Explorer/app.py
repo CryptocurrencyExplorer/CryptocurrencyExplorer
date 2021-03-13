@@ -5,6 +5,7 @@
 # https://docs.sqlalchemy.org/en/14/core/type_basics.html#sqlalchemy.types.Numeric
 import importlib
 import logging
+import sys
 from bitcoinrpc.authproxy import AuthServiceProxy, JSONRPCException
 from flask import Flask, jsonify, make_response, request
 from flask import redirect, url_for, render_template
@@ -19,7 +20,12 @@ from helpers import generate_front_page_blocks, generate_previous_and_next_block
 from config import coin_name, rpcpassword, rpcport, rpcuser
 from config import app_key, csrf_key, database_uri
 
-cryptocurrency = AuthServiceProxy(f"http://{rpcuser}:{rpcpassword}@127.0.0.1:{rpcport}")
+try:
+    cryptocurrency = AuthServiceProxy(f"http://{rpcuser}:{rpcpassword}@127.0.0.1:{rpcport}")
+except ValueError:
+    print("One of these is wrong: rpcuser/rpcpassword/rpcport. Go into config.py and fix this.")
+    sys.exit()
+
 application = Flask(__name__)
 application.debug = True
 application.logger.setLevel(logging.INFO)

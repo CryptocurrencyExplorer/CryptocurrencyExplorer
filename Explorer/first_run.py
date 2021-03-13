@@ -6,6 +6,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.sql import desc
+from sqlalchemy.exc import OperationalError
 from app import db
 from blockchain import bootstrap
 from config import autodetect_coin, autodetect_config, autodetect_rpc, autodetect_tables
@@ -138,25 +139,35 @@ def detect_flask_config():
 
 
 def detect_coin(cryptocurrency):
-    genesis_hash = cryptocurrency.getblockhash(0)
-    coin = bootstrap.get(genesis_hash)
-    if coin is not None:
-        return coin
-    else:
-        print("This isn't a coin I'm aware of.")
-        sys.exit()
+    try:
+        genesis_hash = cryptocurrency.getblockhash(0)
+        coin = bootstrap.get(genesis_hash)
+        if coin is not None:
+            return coin
+        else:
+            print("This isn't a coin I'm aware of.")
+            sys.exit()
+    except JSONRPCException as e:
+        if '401 Authorization Required' in str(e):
+            print("The rpcport is right but one or both these is wrong: rpcuser/rpcpassword.")
+            print("Go into config.py and fix this.")
+            sys.exit()
 
 
 def detect_tables():
-    # TODO - Need to throw this in a try/except in case the database isn't setup
-    engine = create_engine(database_uri)
-    inspector = inspect(engine)
-    detected_tables = inspector.get_table_names()
-    engine.dispose()
-    if detected_tables != ['addresses', 'address_summary', 'blocks', 'blocktxs', 'txs', 'txout', 'txin']:
-        return False
-    else:
-        return True
+    try:
+        engine = create_engine(database_uri)
+        inspector = inspect(engine)
+        detected_tables = inspector.get_table_names()
+        engine.dispose()
+        if detected_tables != ['addresses', 'address_summary', 'blocks', 'blocktxs', 'txs', 'txout', 'txin']:
+            return False
+        else:
+            return True
+    except OperationalError as e:
+        if 'password authentication failed' in str(e):
+            print('Incorrect password for SQLAlchemy. Go into config.py and fix this.')
+            sys.exit()
 
 
 if __name__ == '__main__':
@@ -164,8 +175,8 @@ if __name__ == '__main__':
         detect_flask_config()
     try:
         cryptocurrency = AuthServiceProxy(f"http://{rpcuser}:{rpcpassword}@127.0.0.1:{rpcport}")
-    except JSONRPCException:
-        print("One of these is wrong: rpcuser/rpcpassword/rpcport. Go into config.py and fix this.")
+    except(JSONRPCException, ValueError):
+        print("One or all these is wrong: rpcuser/rpcpassword/rpcport. Go into config.py and fix this.")
         sys.exit()
 
     if autodetect_coin:
