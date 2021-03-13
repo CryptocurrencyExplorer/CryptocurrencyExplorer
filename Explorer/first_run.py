@@ -176,7 +176,7 @@ if __name__ == '__main__':
     try:
         cryptocurrency = AuthServiceProxy(f"http://{rpcuser}:{rpcpassword}@127.0.0.1:{rpcport}")
     except(JSONRPCException, ValueError):
-        print("One or all these is wrong: rpcuser/rpcpassword/rpcport. Go into config.py and fix this.")
+        print("One or all of these is wrong: rpcuser/rpcpassword/rpcport. Go into config.py and fix this.")
         sys.exit()
 
     if autodetect_coin:
