@@ -143,6 +143,8 @@ def detect_coin(cryptocurrency):
         genesis_hash = cryptocurrency.getblockhash(0)
         coin = bootstrap.get(genesis_hash)
         if coin is not None:
+            if coin_name is None:
+                print(f"coin_name in config.py has been autodetected as the following: {coin}")
             return coin
         else:
             print("This isn't a coin I'm aware of.")
