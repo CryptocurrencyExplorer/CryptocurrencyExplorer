@@ -162,10 +162,15 @@ def detect_tables():
         inspector = inspect(engine)
         detected_tables = inspector.get_table_names()
         engine.dispose()
+        # TODO - The expected tables will change when segwit is supported.
+        # Though, obviously segwit won't be manipulated/added to if the specific chain doesn't support it.
         if detected_tables != ['addresses', 'address_summary', 'blocks', 'blocktxs', 'txs', 'txout', 'txin']:
-            return False
-        else:
-            return True
+            if detected_tables == []:
+                db.create_all()
+            else:
+                print("There are some unknown tables within the database.")
+                print("Exiting here since this is unsupported.")
+                sys.exit()
     except OperationalError as e:
         if 'password authentication failed' in str(e):
             print('Incorrect password for SQLAlchemy. Go into config.py and fix this.')
