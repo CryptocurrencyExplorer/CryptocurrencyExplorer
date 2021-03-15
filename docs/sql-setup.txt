@@ -12,3 +12,6 @@ You are now connected to database "db" as user "postgres".
 
 In order to see the tables once first_run.py is started:
 db=# \dt
+
+To get latest saved height:
+SELECT height FROM blocks ORDER BY height DESC LIMIT 1;

@@ -5,9 +5,9 @@
         <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.ico') }}" />
         <meta http-equiv="content-type" content="text/html; charset=utf-8" />
         <meta name="description" content="View transactions, blocks, addresses, and more." />
-        <meta name="keywords" content="{{ config.PROGRAM_NAME }}, transactions, cryptocurrency, crypto, currency, {{ config.COIN_NAME }}" />
-        <meta name="author" content="See https://github.com/Lvl4Sword/CryptocurrencyExplorer/" />
-        <meta property="og:title" content="{{ config.COIN_NAME }} Explorer" />
+        <meta name="keywords" content="{% if config.PROGRAM_NAME is not none %}{{ config.PROGRAM_NAME }}, {% else %}https://github.com/CryptocurrencyExplorer/CryptocurrencyExplorer, {% endif %}transactions, cryptocurrency, crypto, currency{% if config.COIN_NAME != '' %}, {{ config.COIN_NAME }}{% endif %}" />
+        <meta name="author" content="See https://github.com/CryptocurrencyExplorer/CryptocurrencyExplorer" />
+        <meta property="og:title" content="{% if config.COIN_NAME is not none %}{{ config.COIN_NAME }}{% else %}Cryptocurrency{% endif %} Explorer" />
         <meta property="og:description" content="View transactions, blocks, addresses, and more." />
         <meta property="og:url" content="{{ request.base_url }}" />
         <meta property="og:image" content="{{ url_for('static', filename='images/icon.png', _external=True) }}" />
@@ -20,7 +20,7 @@
         {% block start_body %}
         <div class="container">
             <h1 class=woodcenter><a href="/">
-                <img src="{{ url_for('static', filename='images/cryptocurrency.svg') }}" alt="{{ config.COIN_NAME }} logo" title="{{ config.COIN_NAME }} logo" width="52px" height="52px"/></a><a href="/"> {% block additional_text %}{% endblock %}</a>
+                <img src="{{ url_for('static', filename='images/cryptocurrency.svg') }}" alt="{% if config.COIN_NAME is not none %}{{ config.COIN_NAME }}{% else %}A really cool cryptocurrency{% endif %} logo" title="{% if config.COIN_NAME is not none %}{{ config.COIN_NAME }}{% else %}A really cool cryptocurrency{% endif %} logo" width="52px" height="52px"/></a><a href="/"> {% block additional_text %}{% endblock %}</a>
             </h1>{% endblock %}
             {% block the_form %}
             <div class="formtest">
@@ -39,7 +39,7 @@
         </div>
         {% block footer %}
         <div class="footer">
-            <b>Check out the <a href="https://github.com/Lvl4Sword/CryptocurrencyExplorer">source code!</a></b>
+            <b>Check out the <a href="https://github.com/CryptocurrencyExplorer/CryptocurrencyExplorer">source code!</a></b>
         </div>
         {% endblock %}
     </body>
