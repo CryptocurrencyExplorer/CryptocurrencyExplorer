@@ -2,6 +2,7 @@ Cryptocurrency Explorer
 ==========
 https://github.com/CryptocurrencyExplorer/CryptocurrencyExplorer
 
+This software is **NOT** yet stable. **DO NOT** use in production!
 
 Welcome to Cryptocurrency Explorer!
 ==========
