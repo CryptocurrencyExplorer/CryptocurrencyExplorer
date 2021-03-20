@@ -14,13 +14,13 @@ def format_time(timestamp):
     return datetime.datetime.fromtimestamp(timestamp)
 
 
-def generate_front_page_blocks(woodcoin, db):
+def generate_front_page_blocks(cryptocurrency, db):
     front_page_blocks = {}
-    total_blocks = woodcoin.getblockcount() + 1
+    total_blocks = cryptocurrency.getblockcount() + 1
     for each in range(total_blocks-25, total_blocks):
         front_page_blocks[each] = {}
-        block_raw_hash = woodcoin.getblockhash(each)
-        the_block = woodcoin.getblock(block_raw_hash)
+        block_raw_hash = cryptocurrency.getblockhash(each)
+        the_block = cryptocurrency.getblock(block_raw_hash)
         block_height = the_block['height']
         block_hash = the_block['hash']
         block_transactions = the_block['tx']
@@ -34,7 +34,7 @@ def generate_front_page_blocks(woodcoin, db):
         value_out = decimal.Decimal(0.00000000)
         for number, this_transaction in enumerate(the_block['tx']):
             if block_height != 0:
-                raw_block_tx = woodcoin.getrawtransaction(this_transaction, 1)
+                raw_block_tx = cryptocurrency.getrawtransaction(this_transaction, 1)
                 value_out += sum([x['value'] for x in raw_block_tx['vout']])
                 # This is filler for the time being
                 fees = 0
@@ -51,17 +51,17 @@ def generate_front_page_blocks(woodcoin, db):
     return sorted(front_page_blocks.items(), reverse=True)
 
 
-def generate_previous_and_next_block(woodcoin, the_block):
+def generate_previous_and_next_block(cryptocurrency, the_block):
     if the_block['height'] != 0:
         previous_hash_height = the_block['height'] - 1
-        previous_block_raw_hash = woodcoin.getblockhash(previous_hash_height)
-        previous_block = woodcoin.getblock(previous_block_raw_hash)
+        previous_block_raw_hash = cryptocurrency.getblockhash(previous_hash_height)
+        previous_block = cryptocurrency.getblock(previous_block_raw_hash)
     else:
         previous_block = {'hash': None}
-    if the_block['height'] != woodcoin.getblockcount():
+    if the_block['height'] != cryptocurrency.getblockcount():
         next_hash_height = the_block['height'] + 1
-        next_block_raw_hash = woodcoin.getblockhash(next_hash_height)
-        next_block = woodcoin.getblock(next_block_raw_hash)
+        next_block_raw_hash = cryptocurrency.getblockhash(next_hash_height)
+        next_block = cryptocurrency.getblock(next_block_raw_hash)
     else:
         next_block = {'hash': None}
     return previous_block['hash'], next_block['hash']
