@@ -14,7 +14,7 @@
         <meta property="og:type" content="website" />
         <link rel="stylesheet" href="{{ url_for('static', filename='css/abe.css') }}">
         <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
-        <title>{% block title %}{% endblock %} | {{ config.PROGRAM_NAME }}</title>
+        <title>{% block title %}{% endblock %} | {% if config.PROGRAM_NAME is not none %}{{ config.PROGRAM_NAME }}{% else %}Cryptocurrency Explorer{% endif %}</title>
     </head>{% endblock %}
     <body>
         {% block start_body %}
