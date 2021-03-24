@@ -18,9 +18,11 @@ first_run_app = Flask(__name__)
 first_run_app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 first_run_app.config['SQLALCHEMY_DATABASE_URI'] = database_uri
 database = SQLAlchemy(first_run_app)
-
+# This is a placeholder to indicate the transaction is empty
+EMPTY = ''
 
 def lets_boogy(the_blocks):
+    total_cumulative_difficulty = decimal.Decimal(0.0)
     for block_height in the_blocks:
         block_raw_hash = cryptocurrency.getblockhash(block_height)
         the_block = cryptocurrency.getblock(block_raw_hash)
@@ -39,13 +41,7 @@ def lets_boogy(the_blocks):
                                n=number,
                                tx_id=this_transaction)
             db.session.add(this_tx)
-            if block_height == 0:
-                this_transaction = {}
-                the_TX = TXs(txid='d508b7916ec00595c1f8e1c767dc3b37392a5e68adf98118bca80a2ed58331d6',
-                             version=1,
-                             locktime=0)
-                db.session.add(the_TX)
-            else:
+            try:
                 raw_block_tx = cryptocurrency.getrawtransaction(this_transaction, 1)
                 if len(the_block['tx']) != 1:
                     if number == 0:
@@ -54,13 +50,21 @@ def lets_boogy(the_blocks):
                         a = cryptocurrency.getrawtransaction(cryptocurrency.getrawtransaction(this_transaction, 1)['txid'], 1)
                         b = [cryptocurrency.getrawtransaction(x['txid'], 1) for x in a['vin']]
                         c = [f"{x['vout'][0]['scriptPubKey']['addresses'][0]} / {x['vout'][0]['value']}" for x in b]
+                        print(c)
+                        sys.exit()
                 else:
-                    print(raw_block_tx)
-
-                the_TX = TXs(txid=raw_block_tx['txid'],
+                    print(cryptocurrency.getrawtransaction(this_transaction, 1))
+                the_tx = TXs(txid=raw_block_tx['txid'],
                              version=raw_block_tx['version'],
                              locktime=raw_block_tx['locktime'])
-                db.session.add(the_TX)
+                db.session.add(the_tx)
+            except JSONRPCException as e:
+                if 'No information available about transaction' in str(e):
+                    # TODO - Add something to indicate this transaction is unavailable
+                    the_tx = TXs(txid=this_transaction,
+                                 version=0,
+                                 locktime=0)
+                    db.session.add(the_tx)
             commit_transaction_in = TXIn(n=0,
                                          prevout_hash='test',
                                          prevout_n=0,
@@ -73,7 +77,7 @@ def lets_boogy(the_blocks):
                                            value=1.0,
                                            scriptpubkey='test',
                                            spent=False)
-        # block_height == 0
+        total_cumulative_difficulty += decimal.Decimal(the_block['difficulty'])
         if block_height == 0:
             this_blocks_info = Blocks(height=the_block['height'],
                                       hash=the_block['hash'],
@@ -86,7 +90,7 @@ def lets_boogy(the_blocks):
                                       nonce=the_block['nonce'],
                                       size=the_block['size'],
                                       difficulty=decimal.Decimal(the_block['difficulty']),
-                                      cumulative_difficulty=decimal.Decimal(1.0),
+                                      cumulative_difficulty=total_cumulative_difficulty,
                                       value_out=decimal.Decimal(1.0),
                                       transaction_fees=decimal.Decimal(1.0),
                                       total_out=decimal.Decimal(1.0))
@@ -191,13 +195,13 @@ if __name__ == '__main__':
     if autodetect_tables:
         detect_tables()
     most_recent_block = cryptocurrency.getblockcount()
-    most_recent_stored_block = db.session.query(Blocks).order_by(desc('height')).first()
+    most_recent_stored_block = db.session.query(Blocks).order_by(desc('height')).first().height
 
     if most_recent_stored_block is None:
         the_blocks = range(0, most_recent_block + 1)
         lets_boogy(the_blocks)
     elif most_recent_stored_block != most_recent_block:
-        the_blocks = range(most_recent_stored_block, most_recent_block + 1)
+        the_blocks = range(most_recent_stored_block + 1, most_recent_block + 1)
         lets_boogy(the_blocks)
     else:
         print("Looks like you're all up-to-date")
