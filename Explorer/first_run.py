@@ -20,10 +20,17 @@ first_run_app.config['SQLALCHEMY_DATABASE_URI'] = database_uri
 database = SQLAlchemy(first_run_app)
 # This is a placeholder to indicate the transaction is empty
 EMPTY = ''
+EXPECTED_TABLES = set(['addresses', 'address_summary', 'blocks', 'blocktxs', 'txs', 'txout', 'txin'])
+
 
 def lets_boogy(the_blocks):
-    total_cumulative_difficulty = decimal.Decimal(0.0)
+    if the_blocks[0] == 0:
+        total_cumulative_difficulty = decimal.Decimal(0.0)
+    else:
+        total_cumulative_difficulty = db.session.query(Blocks).order_by(desc('cumulative_difficulty')).first().cumulative_difficulty
+
     for block_height in the_blocks:
+        total_value_out = decimal.Decimal(0.0)
         block_raw_hash = cryptocurrency.getblockhash(block_height)
         the_block = cryptocurrency.getblock(block_raw_hash)
 
@@ -51,9 +58,12 @@ def lets_boogy(the_blocks):
                         b = [cryptocurrency.getrawtransaction(x['txid'], 1) for x in a['vin']]
                         c = [f"{x['vout'][0]['scriptPubKey']['addresses'][0]} / {x['vout'][0]['value']}" for x in b]
                         print(c)
-                        sys.exit()
+                        total_value_out += sum(x['vout'][0]['value'] for x in b)
+                        print(total_value_out)
                 else:
-                    print(cryptocurrency.getrawtransaction(this_transaction, 1))
+                    this_specific_transaction = cryptocurrency.getrawtransaction(this_transaction, 1)
+                    total_value_out += this_specific_transaction['vout'][0]['value']
+                    print(total_value_out)
                 the_tx = TXs(txid=raw_block_tx['txid'],
                              version=raw_block_tx['version'],
                              locktime=raw_block_tx['locktime'])
@@ -107,7 +117,7 @@ def lets_boogy(the_blocks):
                                       nonce=the_block['nonce'],
                                       size=the_block['size'],
                                       difficulty=decimal.Decimal(the_block['difficulty']),
-                                      cumulative_difficulty=decimal.Decimal(1.0),
+                                      cumulative_difficulty=total_cumulative_difficulty,
                                       value_out=decimal.Decimal(1.0),
                                       transaction_fees=decimal.Decimal(1.0),
                                       total_out=decimal.Decimal(1.0))
@@ -124,7 +134,7 @@ def lets_boogy(the_blocks):
                                       nonce=the_block['nonce'],
                                       size=the_block['size'],
                                       difficulty=decimal.Decimal(the_block['difficulty']),
-                                      cumulative_difficulty=decimal.Decimal(1.0),
+                                      cumulative_difficulty=total_cumulative_difficulty,
                                       value_out=decimal.Decimal(1.0),
                                       transaction_fees=decimal.Decimal(1.0),
                                       total_out=decimal.Decimal(1.0))
@@ -164,17 +174,21 @@ def detect_tables():
     try:
         engine = create_engine(database_uri)
         inspector = inspect(engine)
-        detected_tables = inspector.get_table_names()
+        detected_tables = set(inspector.get_table_names())
         engine.dispose()
         # TODO - The expected tables will change when segwit is supported.
         # Though, obviously segwit won't be manipulated/added to if the specific chain doesn't support it.
-        if detected_tables != ['addresses', 'address_summary', 'blocks', 'blocktxs', 'txs', 'txout', 'txin']:
-            if detected_tables == []:
-                db.create_all()
-            else:
-                print("There are some unknown tables within the database.")
-                print("Exiting here since this is unsupported.")
-                sys.exit()
+        extra_tables_detected = detected_tables.difference(EXPECTED_TABLES)
+        valid_tables_missing = EXPECTED_TABLES.difference(detected_tables)
+        if len(detected_tables) == 0:
+            db.create_all()
+        else:
+            if len(extra_tables_detected) != 0:
+                print('There were extra tables detected:')
+                print(extra_tables_detected)
+            elif len(valid_tables_missing) != 0:
+                print('These expected tables are missing:')
+                print(valid_tables_missing)
     except OperationalError as e:
         if 'password authentication failed' in str(e):
             print('Incorrect password for SQLAlchemy. Go into config.py and fix this.')
@@ -182,6 +196,8 @@ def detect_tables():
 
 
 if __name__ == '__main__':
+    db.drop_all()
+
     if autodetect_config:
         detect_flask_config()
     try:
@@ -194,15 +210,18 @@ if __name__ == '__main__':
         detect_coin(cryptocurrency)
     if autodetect_tables:
         detect_tables()
-    most_recent_block = cryptocurrency.getblockcount()
-    most_recent_stored_block = db.session.query(Blocks).order_by(desc('height')).first().height
 
-    if most_recent_stored_block is None:
+    most_recent_block = cryptocurrency.getblockcount()
+
+    try:
+        most_recent_stored_block = db.session.query(Blocks).order_by(desc('height')).first().height
+    except AttributeError:
         the_blocks = range(0, most_recent_block + 1)
         lets_boogy(the_blocks)
-    elif most_recent_stored_block != most_recent_block:
-        the_blocks = range(most_recent_stored_block + 1, most_recent_block + 1)
-        lets_boogy(the_blocks)
     else:
-        print("Looks like you're all up-to-date")
-        sys.exit()
+        if most_recent_stored_block != most_recent_block:
+            the_blocks = range(most_recent_stored_block + 1, most_recent_block + 1)
+            lets_boogy(the_blocks)
+        else:
+            print("Looks like you're all up-to-date")
+            sys.exit()
