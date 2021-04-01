@@ -40,53 +40,57 @@ def lets_boogy(the_blocks):
         block_confirmations = cryptocurrency.getblockcount() + 1 - block_height
 
         block_transactions = the_block['tx']
-        for number, this_transaction in enumerate(block_transactions):
-            # "The tx_id column is the transaction to which this output belongs,
-            # n is the position within the output list."
-            # https://grisha.org/blog/2017/12/15/blockchain-and-postgres/
-            this_tx = BlockTXs(block_height=block_height,
-                               n=number,
-                               tx_id=this_transaction)
-            db.session.add(this_tx)
-            try:
-                raw_block_tx = cryptocurrency.getrawtransaction(this_transaction, 1)
-                if len(the_block['tx']) != 1:
-                    if number == 0:
-                        print(cryptocurrency.getrawtransaction(this_transaction, 1))
-                    else:
-                        a = cryptocurrency.getrawtransaction(cryptocurrency.getrawtransaction(this_transaction, 1)['txid'], 1)
-                        b = [cryptocurrency.getrawtransaction(x['txid'], 1) for x in a['vin']]
-                        c = [f"{x['vout'][0]['scriptPubKey']['addresses'][0]} / {x['vout'][0]['value']}" for x in b]
-                        print(c)
-                        total_value_out += sum(x['vout'][0]['value'] for x in b)
-                        print(total_value_out)
-                else:
-                    this_specific_transaction = cryptocurrency.getrawtransaction(this_transaction, 1)
-                    total_value_out += this_specific_transaction['vout'][0]['value']
-                    print(total_value_out)
-                the_tx = TXs(txid=raw_block_tx['txid'],
-                             version=raw_block_tx['version'],
-                             locktime=raw_block_tx['locktime'])
-                db.session.add(the_tx)
-            except JSONRPCException as e:
-                if 'No information available about transaction' in str(e):
-                    # TODO - Add something to indicate this transaction is unavailable
-                    the_tx = TXs(txid=this_transaction,
-                                 version=0,
-                                 locktime=0)
+        how_many_transactions = len(block_transactions)
+        # If there's more than one transaction, we need to calculate fees.
+        # Since this involves inputs - outputs, the coinbase is done last.
+        if how_many_transactions > 1:
+            number = 1
+            for this_transaction in block_transactions[1:]:
+                # "The tx_id column is the transaction to which this output belongs,
+                # n is the position within the output list."
+                # https://grisha.org/blog/2017/12/15/blockchain-and-postgres/
+                this_tx = BlockTXs(block_height=block_height,
+                                   n=number,
+                                   tx_id=this_transaction)
+                db.session.add(this_tx)
+                try:
+                    raw_block_tx = cryptocurrency.getrawtransaction(this_transaction, 1)
+                    transaction_specifics = cryptocurrency.getrawtransaction(cryptocurrency.getrawtransaction(
+                                                                             this_transaction, 1)['txid'], 1)
+                    b = [cryptocurrency.getrawtransaction(transaction_specifics['txid'], 1) for x in transaction_specifics['vin']]
+                    c = [f"{x['vout'][0]['scriptPubKey']['addresses'][0]} / {x['vout'][0]['value']}" for x in b]
+                    total_value_out += sum(x['vout'][0]['value'] for x in b)
+                    # print(total_value_out)
+                    commit_transaction_in = TXIn(tx_id='test',
+                                                 n=0,
+                                                 prevout_hash='test',
+                                                 prevout_n=0,
+                                                 scriptsig='test',
+                                                 sequence=0,
+                                                 witness='test',
+                                                 prevout_tx_id='test')
+                    commit_transaction_out = TxOut(tx_id='test',
+                                                   n=0,
+                                                   value=1.0,
+                                                   scriptpubkey='test',
+                                                   spent=False)
+                    the_tx = TXs(txid=raw_block_tx['txid'],
+                                 version=raw_block_tx['version'],
+                                 locktime=raw_block_tx['locktime'])
                     db.session.add(the_tx)
-            commit_transaction_in = TXIn(n=0,
-                                         prevout_hash='test',
-                                         prevout_n=0,
-                                         scriptsig='test',
-                                         sequence=0,
-                                         witness='test',
-                                         prevout_tx_id='test')
-            commit_transaction_out = TxOut(tx_id='test',
-                                           n=0,
-                                           value=1.0,
-                                           scriptpubkey='test',
-                                           spent=False)
+                except JSONRPCException as e:
+                    if 'No information available about transaction' in str(e):
+                        # TODO - Add something to indicate this transaction is unavailable
+                        the_tx = TXs(txid=this_transaction,
+                                     version=0,
+                                     locktime=0)
+                        db.session.add(the_tx)
+                number += 1
+        # Coinbase will happen here, since we've iterated through
+        # everything else and need to know fees now
+        elif how_many_transactions == 1:
+
+
         total_cumulative_difficulty += decimal.Decimal(the_block['difficulty'])
         if block_height == 0:
             this_blocks_info = Blocks(height=the_block['height'],
@@ -216,6 +220,7 @@ if __name__ == '__main__':
     try:
         most_recent_stored_block = db.session.query(Blocks).order_by(desc('height')).first().height
     except AttributeError:
+        print('??')
         the_blocks = range(0, most_recent_block + 1)
         lets_boogy(the_blocks)
     else:
