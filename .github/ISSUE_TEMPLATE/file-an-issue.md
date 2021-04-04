@@ -14,7 +14,7 @@ If you've found a security issue please do the following:
 2. Click through to the site listed on their profile
 3. Scroll down and use the e-mail / PGP key listed
 4. Copy/paste the below template into the e-mail and detail everything you can.
-5 . Feel warm inside for helping the project fix a bug :-)
+5. Feel warm inside for helping the project fix a bug :-)
 
 ----
 
