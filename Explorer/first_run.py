@@ -57,21 +57,26 @@ def lets_boogy(the_blocks):
                     raw_block_tx = cryptocurrency.getrawtransaction(this_transaction, 1)
                     transaction_specifics = cryptocurrency.getrawtransaction(cryptocurrency.getrawtransaction(
                                                                              this_transaction, 1)['txid'], 1)
-                    b = [cryptocurrency.getrawtransaction(transaction_specifics['txid'], 1) for x in transaction_specifics['vin']]
-                    c = [f"{x['vout'][0]['scriptPubKey']['addresses'][0]} / {x['vout'][0]['value']}" for x in b]
+                    b = [cryptocurrency.getrawtransaction(x, 1) for x in block_transactions]
+                    print(b)
+                    # c = [f"{x['vout'][0]['scriptPubKey']['addresses'][0]} / {x['vout'][0]['value']}" for x in b]
                     total_value_out += sum(x['vout'][0]['value'] for x in b)
                     # print(total_value_out)
-                    commit_transaction_in = TXIn(tx_id='test',
-                                                 n=0,
-                                                 prevout_hash='test',
-                                                 prevout_n=0,
+                    how_many_vin = len(transaction_specifics['vin'])
+                    how_many_vout = len(transaction_specifics['vout'])
+                    print(f'vin: {how_many_vin}')
+                    print(f'vout: {how_many_vout}')
+                    commit_transaction_in = TXIn(tx_id=this_transaction,
+                                                 n=number,
+                                                 prevout_hash=,
+                                                 prevout_n=,
                                                  scriptsig='test',
                                                  sequence=0,
                                                  witness='test',
                                                  prevout_tx_id='test')
                     commit_transaction_out = TxOut(tx_id='test',
                                                    n=0,
-                                                   value=1.0,
+                                                   value=total_value_out,
                                                    scriptpubkey='test',
                                                    spent=False)
                     the_tx = TXs(txid=raw_block_tx['txid'],
