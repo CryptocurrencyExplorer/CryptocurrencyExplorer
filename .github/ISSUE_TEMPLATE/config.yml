@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Start a discussion
+    url: https://github.com/CryptocurrencyExplorer/CryptocurrencyExplorer/discussions
+    about: General discussions
+  - name: Questions?
+    url: https://webchat.freenode.net/?channels=%23cryptocurrencyexplorer
+    about: Asynchronous chat with the dev, when available
