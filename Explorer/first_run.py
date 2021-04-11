@@ -39,13 +39,22 @@ def lets_boogy(the_blocks):
         # Rather than storing it in a database, the FOR loop will take care of it.
         block_confirmations = cryptocurrency.getblockcount() + 1 - block_height
 
-        block_transactions = the_block['tx']
-        how_many_transactions = len(block_transactions)
+        raw_block_transactions = the_block['tx']
+        how_many_transactions = len(raw_block_transactions)
         # If there's more than one transaction, we need to calculate fees.
         # Since this involves inputs - outputs, the coinbase is done last.
+        try:
+            processed_block_transactions = [cryptocurrency.getrawtransaction(x, 1) for x in raw_block_transactions]
+            for each_transaction in processed_block_transactions:
+                for vout in each_transaction['vout']:
+                    total_value_out += vout['value']
+            print(total_value_out)
+        except JSONRPCException as e:
+            print(str(e))
+            print(block_height)
         if how_many_transactions > 1:
             number = 1
-            for this_transaction in block_transactions[1:]:
+            for this_transaction in raw_block_transactions:
                 # "The tx_id column is the transaction to which this output belongs,
                 # n is the position within the output list."
                 # https://grisha.org/blog/2017/12/15/blockchain-and-postgres/
@@ -57,25 +66,21 @@ def lets_boogy(the_blocks):
                     raw_block_tx = cryptocurrency.getrawtransaction(this_transaction, 1)
                     transaction_specifics = cryptocurrency.getrawtransaction(cryptocurrency.getrawtransaction(
                                                                              this_transaction, 1)['txid'], 1)
-                    b = [cryptocurrency.getrawtransaction(x, 1) for x in block_transactions]
-                    print(b)
-                    # c = [f"{x['vout'][0]['scriptPubKey']['addresses'][0]} / {x['vout'][0]['value']}" for x in b]
-                    total_value_out += sum(x['vout'][0]['value'] for x in b)
-                    # print(total_value_out)
                     how_many_vin = len(transaction_specifics['vin'])
                     how_many_vout = len(transaction_specifics['vout'])
                     print(f'vin: {how_many_vin}')
                     print(f'vout: {how_many_vout}')
                     commit_transaction_in = TXIn(tx_id=this_transaction,
                                                  n=number,
-                                                 prevout_hash=,
-                                                 prevout_n=,
+                                                 prevout_hash='test',
+                                                 prevout_n='test',
                                                  scriptsig='test',
                                                  sequence=0,
                                                  witness='test',
                                                  prevout_tx_id='test')
                     commit_transaction_out = TxOut(tx_id='test',
                                                    n=0,
+                                                   # TODO - This shouldn't be total_value_out
                                                    value=total_value_out,
                                                    scriptpubkey='test',
                                                    spent=False)
@@ -93,8 +98,8 @@ def lets_boogy(the_blocks):
                 number += 1
         # Coinbase will happen here, since we've iterated through
         # everything else and need to know fees now
-        elif how_many_transactions == 1:
-
+#        elif how_many_transactions == 1:
+#            print('?')
 
         total_cumulative_difficulty += decimal.Decimal(the_block['difficulty'])
         if block_height == 0:
@@ -110,7 +115,7 @@ def lets_boogy(the_blocks):
                                       size=the_block['size'],
                                       difficulty=decimal.Decimal(the_block['difficulty']),
                                       cumulative_difficulty=total_cumulative_difficulty,
-                                      value_out=decimal.Decimal(1.0),
+                                      value_out=total_value_out,
                                       transaction_fees=decimal.Decimal(1.0),
                                       total_out=decimal.Decimal(1.0))
         # block_height is not the most recent
@@ -127,7 +132,7 @@ def lets_boogy(the_blocks):
                                       size=the_block['size'],
                                       difficulty=decimal.Decimal(the_block['difficulty']),
                                       cumulative_difficulty=total_cumulative_difficulty,
-                                      value_out=decimal.Decimal(1.0),
+                                      value_out=total_value_out,
                                       transaction_fees=decimal.Decimal(1.0),
                                       total_out=decimal.Decimal(1.0))
         # block_height IS the most recent
@@ -144,7 +149,7 @@ def lets_boogy(the_blocks):
                                       size=the_block['size'],
                                       difficulty=decimal.Decimal(the_block['difficulty']),
                                       cumulative_difficulty=total_cumulative_difficulty,
-                                      value_out=decimal.Decimal(1.0),
+                                      value_out=total_value_out,
                                       transaction_fees=decimal.Decimal(1.0),
                                       total_out=decimal.Decimal(1.0))
         db.session.add(this_blocks_info)
