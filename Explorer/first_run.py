@@ -1,5 +1,4 @@
 import decimal
-import os
 import sys
 from bitcoinrpc.authproxy import AuthServiceProxy, JSONRPCException
 from flask import Flask
@@ -12,7 +11,8 @@ from blockchain import bootstrap
 from config import autodetect_coin, autodetect_config, autodetect_rpc, autodetect_tables
 from config import coin_name, rpcpassword, rpcport, rpcuser
 from config import app_key, csrf_key, database_uri
-from models import Addresses, AddressSummary, Blocks, BlockTXs, TXs, TxOut, TXIn
+from models import Addresses, AddressSummary, Blocks, BlockTXs, CoinbaseTxIn
+from models import TXs, LinkedTxOut, UnlinkedTxOut, TXIn
 
 first_run_app = Flask(__name__)
 first_run_app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -20,7 +20,8 @@ first_run_app.config['SQLALCHEMY_DATABASE_URI'] = database_uri
 database = SQLAlchemy(first_run_app)
 # This is a placeholder to indicate the transaction is empty
 EMPTY = ''
-EXPECTED_TABLES = set(['addresses', 'address_summary', 'blocks', 'blocktxs', 'txs', 'txout', 'txin'])
+EXPECTED_TABLES = {'addresses', 'address_summary', 'blocks', 'blocktxs', 'coinbase_txin', 'txs', 'linked_txout',
+                   'unlinked_txout', 'txin'}
 
 
 def lets_boogy(the_blocks):
@@ -55,6 +56,7 @@ def lets_boogy(the_blocks):
         if how_many_transactions > 1:
             number = 1
             for this_transaction in raw_block_transactions:
+                print(this_transaction)
                 # "The tx_id column is the transaction to which this output belongs,
                 # n is the position within the output list."
                 # https://grisha.org/blog/2017/12/15/blockchain-and-postgres/
@@ -78,6 +80,7 @@ def lets_boogy(the_blocks):
                                                  sequence=0,
                                                  witness='test',
                                                  prevout_tx_id='test')
+                    # TODO - TxOut doesn't even exist anymore
                     commit_transaction_out = TxOut(tx_id='test',
                                                    n=0,
                                                    # TODO - This shouldn't be total_value_out
@@ -200,9 +203,11 @@ def detect_tables():
             if len(extra_tables_detected) != 0:
                 print('There were extra tables detected:')
                 print(extra_tables_detected)
+                sys.exit()
             elif len(valid_tables_missing) != 0:
                 print('These expected tables are missing:')
                 print(valid_tables_missing)
+                sys.exit()
     except OperationalError as e:
         if 'password authentication failed' in str(e):
             print('Incorrect password for SQLAlchemy. Go into config.py and fix this.')

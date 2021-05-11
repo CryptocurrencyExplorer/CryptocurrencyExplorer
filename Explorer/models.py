@@ -108,6 +108,20 @@ class BlockTXs(db.Model):
                       nullable=False)
 
 
+class CoinbaseTxIn(db.Model):
+    __tablename__ = 'coinbase_txin'
+    id = db.Column(db.Integer,
+                   primary_key=True)
+    block_height = db.Column(db.Integer,
+                             nullable=False)
+    scriptsig = db.Column(db.String,
+                          unique=False,
+                          nullable=False)
+    sequence = db.Column(db.Integer,
+                         unique=False,
+                         nullable=False)
+
+
 class TXs(db.Model):
     __tablename__ = 'txs'
     id = db.Column(db.Integer,
@@ -123,8 +137,8 @@ class TXs(db.Model):
                          nullable=False)
 
 
-class TxOut(db.Model):
-    __tablename__ = 'txout'
+class LinkedTxOut(db.Model):
+    __tablename__ = 'linked_txout'
     id = db.Column(db.Integer, primary_key=True)
     tx_id = db.Column(db.String)
     n = db.Column(db.Integer,
@@ -136,9 +150,20 @@ class TxOut(db.Model):
     scriptpubkey = db.Column(db.String,
                              unique=False,
                              nullable=False)
-    spent = db.Column(db.Boolean,
+
+
+class UnlinkedTxOut(db.Model):
+    __tablename__ = 'unlinked_txout'
+    id = db.Column(db.Integer, primary_key=True)
+    n = db.Column(db.Integer,
+                  unique=False,
+                  nullable=False)
+    value = db.Column(db.Numeric,
                       unique=False,
                       nullable=False)
+    scriptpubkey = db.Column(db.String,
+                             unique=False,
+                             nullable=False)
 
 
 class TXIn(db.Model):
