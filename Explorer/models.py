@@ -3,7 +3,8 @@ from app import db
 
 class Addresses(db.Model):
     __tablename__ = 'addresses'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer,
+                   primary_key=True)
     address = db.Column(db.String,
                         unique=False,
                         nullable=False)
@@ -26,7 +27,8 @@ class Addresses(db.Model):
 
 class AddressSummary(db.Model):
     __tablename__ = 'address_summary'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer,
+                   primary_key=True)
     address = db.Column(db.String,
                         unique=True,
                         nullable=False)
@@ -49,7 +51,8 @@ class AddressSummary(db.Model):
 
 class Blocks(db.Model):
     __tablename__ = 'blocks'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer,
+                   primary_key=True)
     height = db.Column(db.Integer,
                        unique=True,
                        nullable=False)
@@ -108,20 +111,6 @@ class BlockTXs(db.Model):
                       nullable=False)
 
 
-class CoinbaseTxIn(db.Model):
-    __tablename__ = 'coinbase_txin'
-    id = db.Column(db.Integer,
-                   primary_key=True)
-    block_height = db.Column(db.Integer,
-                             nullable=False)
-    scriptsig = db.Column(db.String,
-                          unique=False,
-                          nullable=False)
-    sequence = db.Column(db.Integer,
-                         unique=False,
-                         nullable=False)
-
-
 class TXs(db.Model):
     __tablename__ = 'txs'
     id = db.Column(db.Integer,
@@ -137,39 +126,27 @@ class TXs(db.Model):
                          nullable=False)
 
 
-class LinkedTxOut(db.Model):
-    __tablename__ = 'linked_txout'
-    id = db.Column(db.Integer, primary_key=True)
-    tx_id = db.Column(db.String)
-    n = db.Column(db.Integer,
-                  unique=False,
-                  nullable=False)
-    value = db.Column(db.Numeric,
-                      unique=False,
-                      nullable=False)
-    scriptpubkey = db.Column(db.String,
-                             unique=False,
+class CoinbaseTxIn(db.Model):
+    __tablename__ = 'coinbase_txin'
+    id = db.Column(db.Integer,
+                   primary_key=True)
+    block_height = db.Column(db.Integer,
                              nullable=False)
-
-
-class UnlinkedTxOut(db.Model):
-    __tablename__ = 'unlinked_txout'
-    id = db.Column(db.Integer, primary_key=True)
-    n = db.Column(db.Integer,
-                  unique=False,
-                  nullable=False)
-    value = db.Column(db.Numeric,
-                      unique=False,
-                      nullable=False)
-    scriptpubkey = db.Column(db.String,
-                             unique=False,
-                             nullable=False)
+    scriptsig = db.Column(db.String,
+                          unique=False,
+                          nullable=False)
+    sequence = db.Column(db.Integer,
+                         unique=False,
+                         nullable=False)
 
 
 class TXIn(db.Model):
     __tablename__ = 'txin'
+    id = db.Column(db.Integer,
+                   primary_key=True)
     tx_id = db.Column(db.String,
-                      primary_key=True)
+                      unique=False,
+                      nullable=False)
     n = db.Column(db.Integer,
                   unique=False,
                   nullable=False)
@@ -187,7 +164,37 @@ class TXIn(db.Model):
                          nullable=False)
     witness = db.Column(db.String,
                         unique=False,
+                        nullable=True)
+
+
+class LinkedTxOut(db.Model):
+    __tablename__ = 'linked_txout'
+    id = db.Column(db.Integer,
+                   primary_key=True)
+    linked_tx_id = db.Column(db.String,
+                             unique=False,
+                             nullable=False)
+    this_tx_id = db.Column(db.String,
+                           unique=False,
+                           nullable=False)
+    n = db.Column(db.Integer,
+                  unique=False,
+                  nullable=False)
+
+
+class TxOut(db.Model):
+    __tablename__ = 'txout'
+    id = db.Column(db.Integer,
+                   primary_key=True)
+    n = db.Column(db.Integer,
+                  unique=False,
+                  nullable=False)
+    value = db.Column(db.Numeric,
+                      unique=False,
+                      nullable=False)
+    scriptpubkey = db.Column(db.String,
+                             unique=False,
+                             nullable=False)
+    address = db.Column(db.String,
+                        unique=False,
                         nullable=False)
-    prevout_tx_id = db.Column(db.String,
-                              unique=False,
-                              nullable=False)
