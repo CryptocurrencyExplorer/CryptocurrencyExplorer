@@ -4,6 +4,8 @@ https://github.com/CryptocurrencyExplorer/CryptocurrencyExplorer
 
 This software is **NOT** yet stable. **DO NOT** use in production!
 
+![irc.libera.chat #cce](https://img.shields.io/badge/irc-libera.chat_cce-brightgreen.svg)
+
 Welcome to Cryptocurrency Explorer!
 ==========
 This software uses RPC calls, stores that JSON into a database,
