@@ -6,7 +6,6 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.sql import desc
 from sqlalchemy.exc import OperationalError
-from app import db
 from blockchain import bootstrap
 from config import autodetect_coin, autodetect_config, autodetect_rpc, autodetect_tables
 from config import coin_name, rpcpassword, rpcport, rpcuser
@@ -14,14 +13,16 @@ from config import app_key, csrf_key, database_uri
 from models import Addresses, AddressSummary, Blocks, BlockTXs, CoinbaseTxIn
 from models import TXs, LinkedTxOut, TxOut, LinkedTxOut, TXIn
 
-first_run_app = Flask(__name__)
-first_run_app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-first_run_app.config['SQLALCHEMY_DATABASE_URI'] = database_uri
-database = SQLAlchemy(first_run_app)
 # This is a placeholder to indicate the transaction is empty
 EMPTY = ''
 EXPECTED_TABLES = {'addresses', 'address_summary', 'blocks', 'blocktxs', 'coinbase_txin', 'txs', 'linked_txout',
                    'txout', 'linked_txin', 'txin'}
+
+first_run_app = Flask(__name__)
+first_run_app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+first_run_app.config['SQLALCHEMY_DATABASE_URI'] = database_uri
+db = SQLAlchemy(first_run_app)
+db.init_app(first_run_app)
 
 
 def lets_boogy(the_blocks):
@@ -123,7 +124,9 @@ def lets_boogy(the_blocks):
                                       difficulty=decimal.Decimal(the_block['difficulty']),
                                       cumulative_difficulty=total_cumulative_difficulty,
                                       value_out=total_value_out,
+                                      # TODO
                                       transaction_fees=decimal.Decimal(1.0),
+                                      # TODO
                                       total_out=decimal.Decimal(1.0))
         # block_height is not the most recent
         elif block_height != the_blocks[-1]:
@@ -140,7 +143,9 @@ def lets_boogy(the_blocks):
                                       difficulty=decimal.Decimal(the_block['difficulty']),
                                       cumulative_difficulty=total_cumulative_difficulty,
                                       value_out=total_value_out,
+                                      # TODO
                                       transaction_fees=decimal.Decimal(1.0),
+                                      # TODO
                                       total_out=decimal.Decimal(1.0))
         # block_height IS the most recent
         else:
@@ -157,7 +162,9 @@ def lets_boogy(the_blocks):
                                       difficulty=decimal.Decimal(the_block['difficulty']),
                                       cumulative_difficulty=total_cumulative_difficulty,
                                       value_out=total_value_out,
+                                      # TODO
                                       transaction_fees=decimal.Decimal(1.0),
+                                      # TODO
                                       total_out=decimal.Decimal(1.0))
         db.session.add(this_blocks_info)
         db.session.commit()

@@ -1,6 +1,7 @@
 import datetime
 import decimal
-
+from sqlalchemy.sql import desc
+from models import Blocks
 
 def format_difficulty(difficulty):
     return f'{decimal.Decimal(difficulty):.8f}'
@@ -14,39 +15,25 @@ def format_time(timestamp):
     return datetime.datetime.fromtimestamp(timestamp)
 
 
-def generate_front_page_blocks(cryptocurrency, db):
+def generate_front_page_blocks(db):
     front_page_blocks = {}
-    total_blocks = cryptocurrency.getblockcount() + 1
-    for each in range(total_blocks-25, total_blocks):
-        front_page_blocks[each] = {}
-        block_raw_hash = cryptocurrency.getblockhash(each)
-        the_block = cryptocurrency.getblock(block_raw_hash)
-        block_height = the_block['height']
-        block_hash = the_block['hash']
-        block_transactions = the_block['tx']
-        how_many_transactions = len(the_block['tx'])
-        block_time = the_block['time']
-        block_difficulty = the_block['difficulty']
-        front_page_blocks[each]['block_hash'] = block_raw_hash
-        front_page_blocks[each]['block_height'] = block_height
-        front_page_blocks[each]['formatted_time'] = block_time
-        front_page_blocks[each]['total_transactions'] = how_many_transactions
-        value_out = decimal.Decimal(0.00000000)
-        for number, this_transaction in enumerate(the_block['tx']):
-            if block_height != 0:
-                raw_block_tx = cryptocurrency.getrawtransaction(this_transaction, 1)
-                value_out += sum([x['value'] for x in raw_block_tx['vout']])
-                # This is filler for the time being
-                fees = 0
-            else:
-                raw_block_tx = {}
-                value_out = decimal.Decimal(0.00000000)
-                fees = decimal.Decimal(0.00000000)
-        front_page_blocks[each]['total_out'] = f'{value_out:.8f}'
-        front_page_blocks[each]['difficulty'] = block_difficulty
+    twenty_five_latest = db.session.query(Blocks).order_by(desc('height')).limit(25).all()
+    for each in twenty_five_latest:
+        front_page_blocks[each.height] = {}
+        front_page_blocks[each]['block_height'] = each.height
+        front_page_blocks[each]['block_hash'] = each.hash
+        # TODO
+        how_many_transactions = 9001
+        # TODO
+        front_page_blocks[each]['total_transactions'] = 9001
+        front_page_blocks[each]['formatted_time'] = each.time
+        front_page_blocks[each]['difficulty'] = each.difficulty
+        front_page_blocks[each]['total_out'] = f'{each.total_out:.8f}'
         if how_many_transactions == 1:
+            # TODO
             front_page_blocks[each]['fees'] = decimal.Decimal(0.00000000)
         else:
+            # TODO
             front_page_blocks[each]['fees'] = decimal.Decimal(0.00000000)
     return sorted(front_page_blocks.items(), reverse=True)
 

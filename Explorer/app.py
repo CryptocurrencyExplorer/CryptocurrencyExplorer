@@ -9,7 +9,6 @@ import sys
 from bitcoinrpc.authproxy import AuthServiceProxy, JSONRPCException
 from flask import Flask, jsonify, make_response, request
 from flask import redirect, url_for, render_template
-from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm
 from flask_wtf.csrf import CSRFError, CSRFProtect
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -19,6 +18,7 @@ from helpers import format_difficulty, format_transaction_length, format_time
 from helpers import generate_front_page_blocks, generate_previous_and_next_block
 from config import coin_name, rpcpassword, rpcport, rpcuser
 from config import app_key, csrf_key, database_uri
+from models import db
 
 try:
     cryptocurrency = AuthServiceProxy(f"http://{rpcuser}:{rpcpassword}@127.0.0.1:{rpcport}")
@@ -46,7 +46,7 @@ application.jinja_env.lstrip_blocks = True
 # app.config['SESSION_COOKIE_SECURE'] = True
 application.wsgi_app = ProxyFix(application.wsgi_app, x_proto=1, x_host=1)
 csrf = CSRFProtect(application)
-db = SQLAlchemy(application)
+db.init_app(application)
 
 
 @application.errorhandler(CSRFError)
@@ -61,7 +61,7 @@ def handle_bad_request():
 
 
 @application.errorhandler(404)
-def not_found():
+def not_found(e):
     error = f'{request.environ["RAW_URI"]} was not found'
     return render_template("404.html", error=error), 404
 
@@ -120,7 +120,7 @@ def index():
                                                   'error': 'todo'}), 200)
     return render_template('index.html',
                            form=form,
-                           front_page_blocks=generate_front_page_blocks(cryptocurrency, db),
+                           front_page_blocks=generate_front_page_blocks(db),
                            format_time=format_time)
 
 
