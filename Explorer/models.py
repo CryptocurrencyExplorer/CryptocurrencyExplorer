@@ -135,13 +135,13 @@ class CoinbaseTxIn(db.Model):
     scriptsig = db.Column(db.String,
                           unique=False,
                           nullable=False)
-    sequence = db.Column(db.Integer,
+    sequence = db.Column(db.BIGINT,
                          unique=False,
                          nullable=False)
 
 
-class TXIn(db.Model):
-    __tablename__ = 'txin'
+class LinkedTXIn(db.Model):
+    __tablename__ = 'linked_txin'
     id = db.Column(db.Integer,
                    primary_key=True)
     tx_id = db.Column(db.String,
@@ -159,7 +159,28 @@ class TXIn(db.Model):
     scriptsig = db.Column(db.String,
                           unique=False,
                           nullable=False)
-    sequence = db.Column(db.Integer,
+    sequence = db.Column(db.BIGINT,
+                         unique=False,
+                         nullable=False)
+    witness = db.Column(db.String,
+                        unique=False,
+                        nullable=True)
+
+
+class TXIn(db.Model):
+    __tablename__ = 'txin'
+    id = db.Column(db.Integer,
+                   primary_key=True)
+    tx_id = db.Column(db.String,
+                      unique=False,
+                      nullable=False)
+    n = db.Column(db.Integer,
+                  unique=False,
+                  nullable=False)
+    scriptsig = db.Column(db.String,
+                          unique=False,
+                          nullable=False)
+    sequence = db.Column(db.BIGINT,
                          unique=False,
                          nullable=False)
     witness = db.Column(db.String,

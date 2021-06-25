@@ -35,14 +35,13 @@ def lets_boogy(the_blocks):
         total_value_out = decimal.Decimal(0.0)
         block_raw_hash = cryptocurrency.getblockhash(block_height)
         the_block = cryptocurrency.getblock(block_raw_hash)
-
-        # block_confirmations = the_block['confirmations']
-        # This is better to call in a Flask FOR loop, since it'll always be right.
-        # Rather than storing it in a database, the FOR loop will take care of it.
-        block_confirmations = cryptocurrency.getblockcount() + 1 - block_height
-
+        total_cumulative_difficulty += decimal.Decimal(the_block['difficulty'])
         raw_block_transactions = the_block['tx']
         how_many_transactions = len(raw_block_transactions)
+
+        # Probably better to just take the latest block's height and subtract this block's height to get confirmations
+        # block_confirmations = cryptocurrency.getblockcount() + 1 - block_height
+
         # If there's more than one transaction, we need to calculate fees.
         # Since this involves inputs - outputs, the coinbase is done last.
         for number, this_transaction in enumerate(raw_block_transactions):
@@ -55,6 +54,17 @@ def lets_boogy(the_blocks):
             db.session.add(this_tx)
             try:
                 raw_block_tx = cryptocurrency.getrawtransaction(this_transaction, 1)
+            except JSONRPCException as e:
+                pass
+                # if 'No information available about transaction' in str(e):
+                # TODO - Add something to indicate this transaction is unavailable
+            else:
+                the_tx = TXs(txid=raw_block_tx['txid'],
+                             version=raw_block_tx['version'],
+                             locktime=raw_block_tx['locktime'])
+                db.session.add(the_tx)
+                db.session.commit()
+
                 how_many_vin = len(raw_block_tx['vin'])
                 how_many_vout = len(raw_block_tx['vout'])
                 print(f'vin: {how_many_vin}')
@@ -62,43 +72,43 @@ def lets_boogy(the_blocks):
 
                 for vout in raw_block_tx['vout']:
                     total_value_out += vout['value']
+                    commit_transaction_out = TxOut(n=vout['n'],
+                                                   value=vout['value'],
+                                                   scriptpubkey='test',
+                                                   address=vout['scriptPubKey']['addresses'][0])
+                    db.session.add(commit_transaction_out)
+                    db.session.commit()
 
                 for vin in raw_block_tx['vin']:
-                    if 'vout' in vin and 'txid' in vin:
-                        # If this transaction is referenced, this should never be invalid.
-                        # Not sure if that's even possible.
-                        vin_transaction = cryptocurrency.getrawtransaction(vin['txid'], 1)
-                        print(f"{raw_block_tx['txid']} references {vin['txid']} as previous output -- position: {vin['vout']} of {vin_transaction['txid']}")
+                    if number == 0:
+                        commit_coinbase = CoinbaseTxIn(block_height=the_block['height'],
+                                                       scriptsig=vin['coinbase'],
+                                                       sequence=vin['sequence'])
+                        db.session.add(commit_coinbase)
+                        db.session.commit()
+                    else:
+                        commit_transaction_in = TXIn(tx_id=this_transaction,
+                                                     n=number,
+                                                     scriptsig='test',
+                                                     sequence=0,
+                                                     # TODO - This needs pulled from bootstrap
+                                                     # TODO - Witness actually needs supported
+                                                     witness=None)
+                        db.session.add(commit_transaction_in)
+                        db.session.commit()
+                        # if 'vout' in vin and 'txid' in vin:
+                            # If this transaction is referenced, this should never be invalid.
+                            # Not sure if that's even possible.
+                            # vin_transaction = cryptocurrency.getrawtransaction(vin['txid'], 1)
+                            # print(f"{raw_block_tx['txid']} references {vin['txid']} as previous output -- position: {vin['vout']} of {vin_transaction['txid']}")
+                            # commit_transaction_in = TXIn(tx_id=this_transaction,
+                                                         # n=number,
+                                                         # scriptsig='test',
+                                                         # sequence=0,
+                                                         # TODO - This needs pulled from bootstrap
+                                                         # TODO - Witness actually needs supported
+                                                         # witness=None)
 
-                commit_transaction_in = TXIn(tx_id=this_transaction,
-                                             n=number,
-                                             prevout_hash='test',
-                                             prevout_n='test',
-                                             scriptsig='test',
-                                             sequence=0,
-                                             # TODO - This needs pulled from bootstrap
-                                             # TODO - Witness actually needs supported
-                                             witness=None)
-                # TODO - TxOut exists now, but needs cleaned up
-                commit_transaction_out = TxOut(n=0,
-                                               # TODO - This shouldn't be total_value_out
-                                               value=total_value_out,
-                                               scriptpubkey='test')
-                the_tx = TXs(txid=raw_block_tx['txid'],
-                             version=raw_block_tx['version'],
-                             locktime=raw_block_tx['locktime'])
-                db.session.add(the_tx)
-            except JSONRPCException as e:
-                pass
-                #if 'No information available about transaction' in str(e):
-                    # TODO - Add something to indicate this transaction is unavailable
-                    #the_tx = TXs(txid=this_transaction,
-                    #             version=0,
-                    #             locktime=0)
-                    #db.session.add(the_tx)
-
-        print(total_value_out)
-        total_cumulative_difficulty += decimal.Decimal(the_block['difficulty'])
         if block_height == 0:
             this_blocks_info = Blocks(height=the_block['height'],
                                       hash=the_block['hash'],
