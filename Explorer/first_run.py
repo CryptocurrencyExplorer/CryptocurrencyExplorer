@@ -12,7 +12,7 @@ from config import autodetect_coin, autodetect_config, autodetect_rpc, autodetec
 from config import coin_name, rpcpassword, rpcport, rpcuser
 from config import app_key, csrf_key, database_uri
 from models import Addresses, AddressSummary, Blocks, BlockTXs, CoinbaseTxIn
-from models import TXs, LinkedTxOut, TxOut, TXIn
+from models import TXs, LinkedTxOut, TxOut, LinkedTxOut, TXIn
 
 first_run_app = Flask(__name__)
 first_run_app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -21,7 +21,7 @@ database = SQLAlchemy(first_run_app)
 # This is a placeholder to indicate the transaction is empty
 EMPTY = ''
 EXPECTED_TABLES = {'addresses', 'address_summary', 'blocks', 'blocktxs', 'coinbase_txin', 'txs', 'linked_txout',
-                   'txout', 'txin'}
+                   'txout', 'linked_txin', 'txin'}
 
 
 def lets_boogy(the_blocks):
@@ -219,8 +219,6 @@ def detect_tables():
 
 
 if __name__ == '__main__':
-    db.drop_all()
-
     if autodetect_config:
         detect_flask_config()
     try:
@@ -242,9 +240,16 @@ if __name__ == '__main__':
         the_blocks = range(0, most_recent_block + 1)
         lets_boogy(the_blocks)
     else:
-        if most_recent_stored_block != most_recent_block:
-            the_blocks = range(most_recent_stored_block + 1, most_recent_block + 1)
-            lets_boogy(the_blocks)
+        while True:
+            user_input = input('(C)ontinue or (D)rop all?: ').lower()
+            if user_input in ['c', 'd']:
+                break
+        if user_input == 'd':
+            db.drop_all()
         else:
-            print("Looks like you're all up-to-date")
+            if most_recent_stored_block != most_recent_block:
+                the_blocks = range(most_recent_stored_block + 1, most_recent_block + 1)
+                lets_boogy(the_blocks)
+            else:
+                print("Looks like you're all up-to-date")
             sys.exit()

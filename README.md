@@ -4,7 +4,7 @@ https://github.com/CryptocurrencyExplorer/CryptocurrencyExplorer
 
 This software is **NOT** yet stable. **DO NOT** use in production!
 
-![irc.libera.chat #cce](https://img.shields.io/badge/irc-libera.chat_cce-brightgreen.svg)
+[![irc.libera.chat #cce](https://img.shields.io/badge/irc-libera.chat_cce_(click)-brightgreen.svg)](https://web.libera.chat/?channel=#cce)
 
 Welcome to Cryptocurrency Explorer!
 ==========
