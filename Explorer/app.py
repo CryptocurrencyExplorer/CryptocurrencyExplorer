@@ -225,7 +225,7 @@ def api__confirmations(userinput_block_height):
         # +1 because range() goes up to but doesn't include the number, so to include it we do +1
         if userinput_block_height in range(0, latest_block_height + 1):
             userinput_block_hash = db.session.query(Blocks).filter_by(height=userinput_block_height).first().hash
-            block_confirmations = latest_block_height - userinput_block_height
+            block_confirmations = (latest_block_height + 1) - userinput_block_height
             return make_response(jsonify({'confirmations': block_confirmations,
                                           'block_hash': userinput_block_hash,
                                           'block_height': userinput_block_height,
@@ -241,7 +241,7 @@ def api__confirmations(userinput_block_height):
             latest_block = db.session.query(Blocks).order_by(desc('height')).first()
             latest_block_height = int(latest_block.height)
             latest_block_hash = latest_block.hash
-            block_confirmations = latest_block_height - userinput_block_height
+            block_confirmations = (latest_block_height + 1) - userinput_block_height
             return make_response(jsonify({'confirmations': block_confirmations,
                                           'block_hash': userinput_block_hash.hash,
                                           'block_height': userinput_block_height,
