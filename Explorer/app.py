@@ -11,6 +11,7 @@ from flask import Flask, jsonify, make_response, request
 from flask import redirect, url_for, render_template
 from flask_wtf import FlaskForm
 from flask_wtf.csrf import CSRFError, CSRFProtect
+from sqlalchemy.sql import desc
 from werkzeug.middleware.proxy_fix import ProxyFix
 from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired, Length
@@ -18,7 +19,7 @@ from helpers import format_difficulty, format_transaction_length, format_time
 from helpers import generate_front_page_blocks, generate_previous_and_next_block
 from config import coin_name, rpcpassword, rpcport, rpcuser
 from config import app_key, csrf_key, database_uri
-from models import db
+from models import Blocks, db
 
 try:
     cryptocurrency = AuthServiceProxy(f"http://{rpcuser}:{rpcpassword}@127.0.0.1:{rpcport}")
@@ -199,7 +200,7 @@ def api_index():
 
 @application.route('/api/confirmations/', methods=['GET'])
 def redirect_to_api__confirmations():
-    return redirect(url_for('api__confirmations', block="0"))
+    return redirect(url_for('api__confirmations', userinput_block_height="0"))
 
 
 @application.route('/api/validateaddress/', methods=['GET'])
@@ -208,23 +209,26 @@ def redirect_to_api__validate_address():
 
 
 @application.route('/api/blockcount/', methods=['GET'])
-def api__block_count():
-    return make_response(jsonify({'message': cryptocurrency.getblockcount(),
+def api__block_count(db):
+    return make_response(jsonify({'message': db.session.query(Blocks).order_by(desc('height')).first().height,
                                   'error': 'none'}), 200)
 
 
-@application.route('/api/confirmations/<api_block>/', methods=['GET'])
-def api__confirmations(api_block):
+@application.route('/api/confirmations/<userinput_block_height>/', methods=['GET'])
+def api__confirmations(userinput_block_height):
     try:
+        userinput_block_height = int(userinput_block_height)
+        latest_block = db.session.query(Blocks).order_by(desc('height')).first()
+        latest_block_height = int(latest_block.height)
+        latest_block_hash = latest_block.hash
         # check if this is a block number like 0 or something else.
-        if int(api_block) in range(0, cryptocurrency.getblockcount() + 1):
-            block_raw_hash = cryptocurrency.getblockhash(int(api_block))
-            the_block = cryptocurrency.getblock(block_raw_hash)
-            block_height = the_block['height']
-            block_confirmations = cryptocurrency.getblockcount() + 1 - block_height
-            return make_response(jsonify({'message': block_confirmations,
-                                          'block_hash': block_raw_hash,
-                                          'block_height': int(block),
+        # +1 because range() goes up to but doesn't include the number, so to include it we do +1
+        if userinput_block_height in range(0, latest_block_height + 1):
+            userinput_block_hash = db.session.query(Blocks).filter_by(height=userinput_block_height).first().hash
+            block_confirmations = latest_block_height - userinput_block_height
+            return make_response(jsonify({'confirmations': block_confirmations,
+                                          'block_hash': userinput_block_hash,
+                                          'block_height': userinput_block_height,
                                           'error': 'none'}), 200)
         else:
             return make_response(jsonify({'message': 'This block height is invalid',
@@ -232,12 +236,15 @@ def api__confirmations(api_block):
     except ValueError:
         # not a block number, check if it's a hash
         try:
-            the_block = cryptocurrency.getblock(api_block)
-            block_height = int(the_block['height'])
-            block_confirmations = cryptocurrency.getblockcount() + 1 - block_height
-            return make_response(jsonify({'message': block_confirmations,
-                                          'block_hash': block.lower(),
-                                          'block_height': block_height,
+            userinput_block_hash = db.session.query(Blocks).filter_by(hash=userinput_block_height).first()
+            userinput_block_height = int(userinput_block_hash.height)
+            latest_block = db.session.query(Blocks).order_by(desc('height')).first()
+            latest_block_height = int(latest_block.height)
+            latest_block_hash = latest_block.hash
+            block_confirmations = latest_block_height - userinput_block_height
+            return make_response(jsonify({'confirmations': block_confirmations,
+                                          'block_hash': userinput_block_hash.hash,
+                                          'block_height': userinput_block_height,
                                           'error': 'none'}), 200)
         except JSONRPCException:
             return make_response(jsonify({'message': 'Not a valid block height/hash',
