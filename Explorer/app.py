@@ -135,7 +135,7 @@ def block(block_hash_or_height):
         if int(block_hash_or_height) in range(0, cryptocurrency.getblockcount() + 1):
             block_raw_hash = cryptocurrency.getblockhash(int(block_hash_or_height))
             the_block = cryptocurrency.getblock(block_raw_hash)
-            previous_block_hash, next_block_hash = generate_previous_and_next_block(cryptocurrency, the_block)
+            previous_block_hash, next_block_hash = generate_previous_and_next_block(db, the_block)
             value_out = 0
             for number, this_transaction in enumerate(the_block['tx']):
                 # TODO - this needs pulled from blockchain/*.py
