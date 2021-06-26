@@ -20,21 +20,22 @@ def generate_front_page_blocks(db):
     twenty_five_latest = db.session.query(Blocks).order_by(desc('height')).limit(25).all()
     for each in twenty_five_latest:
         front_page_blocks[each.height] = {}
-        front_page_blocks[each]['block_height'] = each.height
-        front_page_blocks[each]['block_hash'] = each.hash
+        front_page_blocks[each.height]['block_height'] = each.height
+        front_page_blocks[each.height]['block_hash'] = each.hash
         # TODO
         how_many_transactions = 9001
         # TODO
-        front_page_blocks[each]['total_transactions'] = 9001
-        front_page_blocks[each]['formatted_time'] = each.time
-        front_page_blocks[each]['difficulty'] = each.difficulty
-        front_page_blocks[each]['total_out'] = f'{each.total_out:.8f}'
+        front_page_blocks[each.height]['total_transactions'] = 9001
+        front_page_blocks[each.height]['formatted_time'] = each.time
+        front_page_blocks[each.height]['difficulty'] = each.difficulty
+        # TODO
+        front_page_blocks[each.height]['total_out'] = f'{each.value_out:.8f}'
         if how_many_transactions == 1:
             # TODO
-            front_page_blocks[each]['fees'] = decimal.Decimal(0.00000000)
+            front_page_blocks[each.height]['fees'] = decimal.Decimal(0.00000000)
         else:
             # TODO
-            front_page_blocks[each]['fees'] = decimal.Decimal(0.00000000)
+            front_page_blocks[each.height]['fees'] = decimal.Decimal(0.00000000)
     return sorted(front_page_blocks.items(), reverse=True)
 
 
