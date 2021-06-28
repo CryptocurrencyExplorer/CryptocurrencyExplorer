@@ -146,6 +146,8 @@ def lets_boogy(the_blocks):
                                       hash=the_block['hash'],
                                       version=the_block['version'],
                                       prevhash=the_block['previousblockhash'],
+                                      # TODO
+                                      # This needs to be replaced when this stops being the most recent block
                                       nexthash='PLACEHOLDER',
                                       merkleroot=the_block['merkleroot'],
                                       time=the_block['time'],
