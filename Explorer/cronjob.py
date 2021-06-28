@@ -15,11 +15,11 @@ EMPTY = ''
 EXPECTED_TABLES = {'addresses', 'address_summary', 'blocks', 'blocktxs', 'coinbase_txin', 'txs', 'linked_txout',
                    'txout', 'linked_txin', 'txin'}
 
-first_run_app = Flask(__name__)
-first_run_app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-first_run_app.config['SQLALCHEMY_DATABASE_URI'] = database_uri
-db = SQLAlchemy(first_run_app)
-db.init_app(first_run_app)
+cronjob = Flask(__name__)
+cronjob.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+cronjob.config['SQLALCHEMY_DATABASE_URI'] = database_uri
+db = SQLAlchemy(cronjob)
+cronjob.app_context().push()
 
 
 def lets_boogy(the_blocks):
@@ -146,6 +146,8 @@ def lets_boogy(the_blocks):
                                       hash=the_block['hash'],
                                       version=the_block['version'],
                                       prevhash=the_block['previousblockhash'],
+                                      # TODO
+                                      # This needs to be replaced when this stops being the most recent block
                                       nexthash='PLACEHOLDER',
                                       merkleroot=the_block['merkleroot'],
                                       time=the_block['time'],

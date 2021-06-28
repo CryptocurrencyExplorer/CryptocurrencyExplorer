@@ -30,11 +30,8 @@ class Addresses(db.Model):
 
 class AddressSummary(db.Model):
     __tablename__ = 'address_summary'
-    id = db.Column(db.Integer,
-                   primary_key=True)
     address = db.Column(db.String,
-                        unique=True,
-                        nullable=False)
+                        primary_key=True)
     balance = db.Column(db.Numeric,
                         unique=False,
                         nullable=False)
@@ -54,13 +51,11 @@ class AddressSummary(db.Model):
 
 class Blocks(db.Model):
     __tablename__ = 'blocks'
-    id = db.Column(db.Integer,
-                   primary_key=True)
     height = db.Column(db.Integer,
                        unique=True,
                        nullable=False)
     hash = db.Column(db.String,
-                     nullable=False)
+                     primary_key=True)
     version = db.Column(db.Integer,
                         unique=False,
                         nullable=False)
@@ -116,11 +111,8 @@ class BlockTXs(db.Model):
 
 class TXs(db.Model):
     __tablename__ = 'txs'
-    id = db.Column(db.Integer,
-                   primary_key=True)
     txid = db.Column(db.String,
-                     unique=False,
-                     nullable=False)
+                     primary_key=True)
     version = db.Column(db.Integer,
                         unique=False,
                         nullable=False)
@@ -131,10 +123,8 @@ class TXs(db.Model):
 
 class CoinbaseTxIn(db.Model):
     __tablename__ = 'coinbase_txin'
-    id = db.Column(db.Integer,
-                   primary_key=True)
     block_height = db.Column(db.Integer,
-                             nullable=False)
+                             primary_key=True)
     scriptsig = db.Column(db.String,
                           unique=False,
                           nullable=False)
