@@ -2,11 +2,10 @@ import decimal
 import sys
 from bitcoinrpc.authproxy import AuthServiceProxy, JSONRPCException
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import desc
-from blockchain import bootstrap
-from config import coin_name, rpcpassword, rpcport, rpcuser
+from config import rpcpassword, rpcport, rpcuser
 from config import database_uri
+from models import db
 from models import Addresses, AddressSummary, Blocks, BlockTXs, CoinbaseTxIn
 from models import TXs, LinkedTxOut, TxOut, LinkedTxOut, TXIn
 
@@ -15,11 +14,12 @@ EMPTY = ''
 EXPECTED_TABLES = {'addresses', 'address_summary', 'blocks', 'blocktxs', 'coinbase_txin', 'txs', 'linked_txout',
                    'txout', 'linked_txin', 'txin'}
 
-cronjob = Flask(__name__)
-cronjob.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-cronjob.config['SQLALCHEMY_DATABASE_URI'] = database_uri
-db = SQLAlchemy(cronjob)
-cronjob.app_context().push()
+def create_app():
+    cronjob = Flask(__name__)
+    cronjob.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    cronjob.config['SQLALCHEMY_DATABASE_URI'] = database_uri
+    db.init_app(cronjob)
+    return cronjob
 
 
 def lets_boogy(the_blocks):
@@ -146,8 +146,6 @@ def lets_boogy(the_blocks):
                                       hash=the_block['hash'],
                                       version=the_block['version'],
                                       prevhash=the_block['previousblockhash'],
-                                      # TODO
-                                      # This needs to be replaced when this stops being the most recent block
                                       nexthash='PLACEHOLDER',
                                       merkleroot=the_block['merkleroot'],
                                       time=the_block['time'],
@@ -165,6 +163,9 @@ def lets_boogy(the_blocks):
 
 
 if __name__ == '__main__':
+    cronjob = create_app()
+    cronjob.app_context().push()
+
     cryptocurrency = AuthServiceProxy(f"http://{rpcuser}:{rpcpassword}@127.0.0.1:{rpcport}")
 
     most_recent_block = cryptocurrency.getblockcount()

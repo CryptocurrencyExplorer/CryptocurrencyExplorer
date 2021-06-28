@@ -10,19 +10,22 @@ from blockchain import bootstrap
 from config import autodetect_coin, autodetect_config, autodetect_rpc, autodetect_tables
 from config import coin_name, rpcpassword, rpcport, rpcuser
 from config import app_key, csrf_key, database_uri
+from models import db
 from models import Addresses, AddressSummary, Blocks, BlockTXs, CoinbaseTxIn
 from models import TXs, LinkedTxOut, TxOut, LinkedTxOut, TXIn
+
 
 # This is a placeholder to indicate the transaction is empty
 EMPTY = ''
 EXPECTED_TABLES = {'addresses', 'address_summary', 'blocks', 'blocktxs', 'coinbase_txin', 'txs', 'linked_txout',
                    'txout', 'linked_txin', 'txin'}
 
-first_run_app = Flask(__name__)
-first_run_app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-first_run_app.config['SQLALCHEMY_DATABASE_URI'] = database_uri
-db = SQLAlchemy(first_run_app)
-first_run_app.app_context().push()
+def create_app():
+    first_run_app = Flask(__name__)
+    first_run_app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    first_run_app.config['SQLALCHEMY_DATABASE_URI'] = database_uri
+    db.init_app(first_run_app)
+    return first_run_app
 
 
 def lets_boogy(the_blocks):
@@ -202,6 +205,7 @@ def detect_coin(cryptocurrency):
 
 def detect_tables():
     try:
+        db.create_all()
         engine = create_engine(database_uri)
         inspector = inspect(engine)
         detected_tables = set(inspector.get_table_names())
@@ -210,6 +214,9 @@ def detect_tables():
         # Though, obviously segwit won't be manipulated/added to if the specific chain doesn't support it.
         extra_tables_detected = detected_tables.difference(EXPECTED_TABLES)
         valid_tables_missing = EXPECTED_TABLES.difference(detected_tables)
+        print(detected_tables)
+        print(extra_tables_detected)
+        print(valid_tables_missing)
         if len(detected_tables) == 0:
             db.create_all()
         else:
@@ -228,6 +235,9 @@ def detect_tables():
 
 
 if __name__ == '__main__':
+    first_run_app = create_app()
+    first_run_app.app_context().push()
+
     if autodetect_config:
         detect_flask_config()
     try:
@@ -248,6 +258,11 @@ if __name__ == '__main__':
     except AttributeError:
         the_blocks = range(0, most_recent_block + 1)
         lets_boogy(the_blocks)
+    except OperationalError as e:
+        if 'database' in str(e) and 'does not exist' in str(e):
+            print("You'll need to follow the documentation to create the database.")
+            print("This isn't possible through Flask right now (issue \#15 in the Github repo).")
+
     else:
         while True:
             user_input = input('(C)ontinue or (D)rop all?: ').lower()

@@ -20,6 +20,7 @@ from helpers import format_difficulty, format_transaction_length, format_time
 from helpers import generate_front_page_blocks, generate_previous_and_next_block
 from config import coin_name, rpcpassword, rpcport, rpcuser
 from config import app_key, csrf_key, database_uri
+from models import db
 from models import Blocks
 
 try:
@@ -28,28 +29,33 @@ except ValueError:
     print("One of these is wrong: rpcuser/rpcpassword/rpcport. Go into config.py and fix this.")
     sys.exit()
 
-application = Flask(__name__)
-application.debug = True
-application.logger.setLevel(logging.INFO)
-application.secret_key = app_key
-# check blockchain/README.md for this
-application.config['COIN_NAME'] = ''
-importlib.import_module('blockchain', application.config['COIN_NAME'].lower())
-application.config['MAX_CONTENT_LENGTH'] = 256
-application.config['PROGRAM_NAME'] = 'Cryptocurrency Explorer'
-application.config['SESSION_COOKIE_NAME'] = 'csrf_token'
-application.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-application.config['SQLALCHEMY_DATABASE_URI'] = database_uri
-application.config['VERSION'] = 0.7
-application.config['WTF_CSRF_SECRET_KEY'] = csrf_key
-application.jinja_env.trim_blocks = True
-application.jinja_env.lstrip_blocks = True
-# Set this when using HTTPS
-# app.config['SESSION_COOKIE_SECURE'] = True
-application.wsgi_app = ProxyFix(application.wsgi_app, x_proto=1, x_host=1)
-csrf = CSRFProtect(application)
-db = SQLAlchemy(application)
+def create_app():
+    application = Flask(__name__)
+    application.debug = True
+    application.logger.setLevel(logging.INFO)
+    application.secret_key = app_key
+    # check blockchain/README.md for this
+    application.config['COIN_NAME'] = ''
+    importlib.import_module('blockchain', application.config['COIN_NAME'].lower())
+    application.config['MAX_CONTENT_LENGTH'] = 256
+    application.config['PROGRAM_NAME'] = 'Cryptocurrency Explorer'
+    application.config['SESSION_COOKIE_NAME'] = 'csrf_token'
+    application.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    application.config['SQLALCHEMY_DATABASE_URI'] = database_uri
+    application.config['VERSION'] = 0.7
+    application.config['WTF_CSRF_SECRET_KEY'] = csrf_key
+    application.jinja_env.trim_blocks = True
+    application.jinja_env.lstrip_blocks = True
+    # Set this when using HTTPS
+    # app.config['SESSION_COOKIE_SECURE'] = True
+    application.wsgi_app = ProxyFix(application.wsgi_app, x_proto=1, x_host=1)
+    db.init_app(application)
+    return application
+
+
+application = create_app()
 application.app_context().push()
+csrf = CSRFProtect(application)
 
 
 @application.errorhandler(CSRFError)
@@ -138,7 +144,7 @@ def block(block_hash_or_height):
         if int(block_hash_or_height) in range(0, cryptocurrency.getblockcount() + 1):
             block_raw_hash = cryptocurrency.getblockhash(int(block_hash_or_height))
             the_block = cryptocurrency.getblock(block_raw_hash)
-            previous_block_hash, next_block_hash = generate_previous_and_next_block(db, the_block)
+            previous_block_hash, next_block_hash = generate_previous_and_next_block(cryptocurrency, the_block)
             value_out = 0
             for number, this_transaction in enumerate(the_block['tx']):
                 # TODO - this needs pulled from blockchain/*.py
