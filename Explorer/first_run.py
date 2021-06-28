@@ -214,9 +214,6 @@ def detect_tables():
         # Though, obviously segwit won't be manipulated/added to if the specific chain doesn't support it.
         extra_tables_detected = detected_tables.difference(EXPECTED_TABLES)
         valid_tables_missing = EXPECTED_TABLES.difference(detected_tables)
-        print(detected_tables)
-        print(extra_tables_detected)
-        print(valid_tables_missing)
         if len(detected_tables) == 0:
             db.create_all()
         else:
