@@ -109,7 +109,8 @@ def validate_search(search_term):
                                               'error': 'todo'}), 200)
 
 
-@application.route('/', methods=['GET', 'POST'])
+@application.get("/")
+@application.post("/")
 def index():
     form = SearchForm(request.form)
     if request.method == 'POST' and form.validate_on_submit():
@@ -132,12 +133,12 @@ def index():
                            format_time=format_time)
 
 
-@application.route('/block/', methods=['GET'])
+@application.get("/block/")
 def redirect_to_block():
     return redirect(url_for('block', block_hash_or_height="0"))
 
 
-@application.route('/block/<block_hash_or_height>/', methods=['GET'])
+@application.get("/block/<block_hash_or_height>/")
 def block(block_hash_or_height):
     try:
         if int(block_hash_or_height) in range(0, cryptocurrency.getblockcount() + 1):
@@ -200,29 +201,29 @@ def block(block_hash_or_height):
             return render_template('404.html', error="Not a valid block height/hash"), 404
 
 
-@application.route('/api/', methods=['GET'])
+@application.get("/api/")
 def api_index():
     return render_template('api_index.html')
 
 
-@application.route('/api/confirmations/', methods=['GET'])
+@application.get("/api/confirmations/")
 def redirect_to_api__confirmations():
     return redirect(url_for('api__confirmations', userinput_block_height="0"))
 
 
-@application.route('/api/validateaddress/', methods=['GET'])
+@application.get("/api/validateaddress/")
 def redirect_to_api__validate_address():
     return redirect(url_for('api__validate_address', address="INVALID_ADDRESS"))
 
 
-@application.route('/api/blockcount/', methods=['GET'])
+@application.get("/api/blockcount/")
 def api__block_count():
     most_recent_height = db.session.query(Blocks).order_by(desc('height')).first().height
     return make_response(jsonify({'message': most_recent_height,
                                   'error': 'none'}), 200)
 
 
-@application.route('/api/confirmations/<userinput_block_height>/', methods=['GET'])
+@application.get("/api/confirmations/<userinput_block_height>/")
 def api__confirmations(userinput_block_height):
     try:
         userinput_block_height = int(userinput_block_height)
@@ -255,25 +256,25 @@ def api__confirmations(userinput_block_height):
                                           'error': 'invalid'}), 422)
 
 
-@application.route('/api/richlist/', methods=['GET'])
+@application.get("/api/richlist/")
 def api__rich_list():
     return make_response(jsonify({'message': 'todo',
                                   'error': 'todo'}), 200)
 
 
-@application.route('/api/totalcoins/', methods=['GET'])
+@application.get("/api/totalcoins/")
 def api__total_coins():
     return make_response(jsonify({'message': float(cryptocurrency.gettxoutsetinfo()['total_amount']),
                                   'error': 'none'}), 200)
 
 
-@application.route('/api/totaltransactions/', methods=['GET'])
+@application.get("/api/totaltransactions/")
 def api__total_transactions():
     return make_response(jsonify({'message': cryptocurrency.gettxoutsetinfo()['transactions'],
                                   'error': 'none'}), 200)
 
 
-@application.route('/api/validateaddress/<address>/', methods=['GET'])
+@application.get("/api/validateaddress/<address>/")
 def api__validate_address(address):
     if cryptocurrency.validateaddress(address)['isvalid']:
         return make_response(jsonify({'message': 'valid',
