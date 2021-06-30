@@ -9,7 +9,6 @@ import sys
 from bitcoinrpc.authproxy import AuthServiceProxy, JSONRPCException
 from flask import Flask, jsonify, make_response, request
 from flask import redirect, url_for, render_template
-from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm
 from flask_wtf.csrf import CSRFError, CSRFProtect
 from sqlalchemy.sql import desc
@@ -217,8 +216,9 @@ def redirect_to_api__validate_address():
 
 
 @application.route('/api/blockcount/', methods=['GET'])
-def api__block_count(db):
-    return make_response(jsonify({'message': db.session.query(Blocks).order_by(desc('height')).first().height,
+def api__block_count():
+    most_recent_height = db.session.query(Blocks).order_by(desc('height')).first().height
+    return make_response(jsonify({'message': most_recent_height,
                                   'error': 'none'}), 200)
 
 
@@ -226,36 +226,32 @@ def api__block_count(db):
 def api__confirmations(userinput_block_height):
     try:
         userinput_block_height = int(userinput_block_height)
-        latest_block = db.session.query(Blocks).order_by(desc('height')).first()
-        latest_block_height = int(latest_block.height)
-        latest_block_hash = latest_block.hash
-        # check if this is a block number like 0 or something else.
-        # +1 because range() goes up to but doesn't include the number, so to include it we do +1
-        if userinput_block_height in range(0, latest_block_height + 1):
-            userinput_block_hash = db.session.query(Blocks).filter_by(height=userinput_block_height).first().hash
-            block_confirmations = (latest_block_height + 1) - userinput_block_height
-            return make_response(jsonify({'confirmations': block_confirmations,
-                                          'block_hash': userinput_block_hash,
-                                          'block_height': userinput_block_height,
-                                          'error': 'none'}), 200)
-        else:
-            return make_response(jsonify({'message': 'This block height is invalid',
-                                          'error': 'invalid'}), 422)
     except ValueError:
         # not a block number, check if it's a hash
         try:
             userinput_block_hash = db.session.query(Blocks).filter_by(hash=userinput_block_height).first()
-            userinput_block_height = int(userinput_block_hash.height)
-            latest_block = db.session.query(Blocks).order_by(desc('height')).first()
-            latest_block_height = int(latest_block.height)
-            latest_block_hash = latest_block.hash
+            if userinput_block_hash is not None:
+                userinput_block_height = int(userinput_block_hash.height)
+                latest_block_height = int(db.session.query(Blocks).order_by(desc('height')).first().height)
+                block_confirmations = (latest_block_height + 1) - userinput_block_height
+                return make_response(jsonify({'confirmations': block_confirmations,
+                                              'error': 'none'}), 200)
+            else:
+                return make_response(jsonify({'message': 'This block hash/height is invalid',
+                                              'error': 'invalid'}), 422)
+        except JSONRPCException:
+            return make_response(jsonify({'message': 'This block hash/height is invalid',
+                                          'error': 'invalid'}), 422)
+    else:
+        latest_block_height = int(db.session.query(Blocks).order_by(desc('height')).first().height)
+        # check if this is a block number like 0 or something else.
+        # +1 because range() goes up to but doesn't include the number, so to include it we do +1
+        if userinput_block_height in range(0, latest_block_height + 1):
             block_confirmations = (latest_block_height + 1) - userinput_block_height
             return make_response(jsonify({'confirmations': block_confirmations,
-                                          'block_hash': userinput_block_hash.hash,
-                                          'block_height': userinput_block_height,
                                           'error': 'none'}), 200)
-        except JSONRPCException:
-            return make_response(jsonify({'message': 'Not a valid block height/hash',
+        else:
+            return make_response(jsonify({'message': 'This block hash/height is invalid',
                                           'error': 'invalid'}), 422)
 
 
