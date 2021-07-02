@@ -74,7 +74,6 @@ def lets_boogy(the_blocks):
                                  version=raw_block_tx['version'],
                                  locktime=raw_block_tx['locktime'])
                     db.session.add(the_tx)
-                    db.session.commit()
 
                     how_many_vin = len(raw_block_tx['vin'])
                     how_many_vout = len(raw_block_tx['vout'])
@@ -86,7 +85,6 @@ def lets_boogy(the_blocks):
                                                        scriptpubkey='test',
                                                        address=vout['scriptPubKey']['addresses'][0])
                         db.session.add(commit_transaction_out)
-                        db.session.commit()
 
                     for vin in raw_block_tx['vin']:
                         if number == 0:
@@ -94,7 +92,6 @@ def lets_boogy(the_blocks):
                                                            scriptsig=vin['coinbase'],
                                                            sequence=vin['sequence'])
                             db.session.add(commit_coinbase)
-                            db.session.commit()
                         else:
                             commit_transaction_in = TXIn(tx_id=this_transaction,
                                                          n=number,
@@ -104,7 +101,6 @@ def lets_boogy(the_blocks):
                                                          # TODO - Witness actually needs supported
                                                          witness=None)
                             db.session.add(commit_transaction_in)
-                            db.session.commit()
                             # if 'vout' in vin and 'txid' in vin:
                                 # If this transaction is referenced, this should never be invalid.
                                 # Not sure if that's even possible.
