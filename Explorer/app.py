@@ -280,8 +280,9 @@ def api__confirmations(userinput_block_height):
 
 @application.get("/api/lastdifficulty/")
 def api__last_difficulty():
-    return make_response(jsonify({'message': 'todo',
-                                  'error': 'todo'}), 200)
+    latest_difficulty = float(db.session.query(Blocks).order_by(desc('height')).first().difficulty)
+    return make_response(jsonify({'message': latest_difficulty,
+                                  'error': 'none'}), 200)
 
 
 @application.get("/api/receivedbyaddress/<address>")
