@@ -206,14 +206,35 @@ def api_index():
     return render_template('api_index.html')
 
 
+@application.get("/api/addressbalance/")
+def redirect_to_api__address_balance():
+    return redirect(url_for('api__validate_address', address="INVALID_ADDRESS"))
+
+
 @application.get("/api/confirmations/")
 def redirect_to_api__confirmations():
     return redirect(url_for('api__confirmations', userinput_block_height="0"))
 
 
+@application.get("/api/receivedbyaddress/")
+def redirect_to_api__received_by_address():
+    return redirect(url_for('api__received_by_address', address="INVALID_ADDRESS"))
+
+
+@application.get("/api/sentbyaddress/")
+def redirect_to_api__sent_by_address():
+    return redirect(url_for('api__sent_by_address', address="INVALID_ADDRESS"))
+
+
 @application.get("/api/validateaddress/")
 def redirect_to_api__validate_address():
     return redirect(url_for('api__validate_address', address="INVALID_ADDRESS"))
+
+
+@application.get("/api/addressbalance/<address>")
+def api__address_balance(address):
+    return make_response(jsonify({'message': 'todo',
+                                  'error': 'todo'}), 200)
 
 
 @application.get("/api/blockcount/")
@@ -256,8 +277,26 @@ def api__confirmations(userinput_block_height):
                                           'error': 'invalid'}), 422)
 
 
+@application.get("/api/lastdifficulty/")
+def api__last_difficulty():
+    return make_response(jsonify({'message': 'todo',
+                                  'error': 'todo'}), 200)
+
+
+@application.get("/api/receivedbyaddress/<address>")
+def api__received_by_address(address):
+    return make_response(jsonify({'message': 'todo',
+                                  'error': 'todo'}), 200)
+
+
 @application.get("/api/richlist/")
 def api__rich_list():
+    return make_response(jsonify({'message': 'todo',
+                                  'error': 'todo'}), 200)
+
+
+@application.get("/api/sentbyaddress/<address>")
+def api__sent_by_address(address):
     return make_response(jsonify({'message': 'todo',
                                   'error': 'todo'}), 200)
 
