@@ -28,28 +28,29 @@ except ValueError:
     print("One of these is wrong: rpcuser/rpcpassword/rpcport. Go into config.py and fix this.")
     sys.exit()
 
+
 def create_app():
-    application = Flask(__name__)
-    application.debug = True
-    application.logger.setLevel(logging.INFO)
-    application.secret_key = app_key
+    prep_application = Flask(__name__)
+    prep_application.debug = True
+    prep_application.logger.setLevel(logging.INFO)
+    prep_application.secret_key = app_key
     # check blockchain/README.md for this
-    application.config['COIN_NAME'] = ''
-    importlib.import_module('blockchain', application.config['COIN_NAME'].lower())
-    application.config['MAX_CONTENT_LENGTH'] = 256
-    application.config['PROGRAM_NAME'] = 'Cryptocurrency Explorer'
-    application.config['SESSION_COOKIE_NAME'] = 'csrf_token'
-    application.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    application.config['SQLALCHEMY_DATABASE_URI'] = database_uri
-    application.config['VERSION'] = 0.7
-    application.config['WTF_CSRF_SECRET_KEY'] = csrf_key
-    application.jinja_env.trim_blocks = True
-    application.jinja_env.lstrip_blocks = True
+    prep_application.config['COIN_NAME'] = ''
+    importlib.import_module('blockchain', prep_application.config['COIN_NAME'].lower())
+    prep_application.config['MAX_CONTENT_LENGTH'] = 256
+    prep_application.config['PROGRAM_NAME'] = 'Cryptocurrency Explorer'
+    prep_application.config['SESSION_COOKIE_NAME'] = 'csrf_token'
+    prep_application.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    prep_application.config['SQLALCHEMY_DATABASE_URI'] = database_uri
+    prep_application.config['VERSION'] = 0.7
+    prep_application.config['WTF_CSRF_SECRET_KEY'] = csrf_key
+    prep_application.jinja_env.trim_blocks = True
+    prep_application.jinja_env.lstrip_blocks = True
     # Set this when using HTTPS
     # app.config['SESSION_COOKIE_SECURE'] = True
-    application.wsgi_app = ProxyFix(application.wsgi_app, x_proto=1, x_host=1)
-    db.init_app(application)
-    return application
+    prep_application.wsgi_app = ProxyFix(prep_application.wsgi_app, x_proto=1, x_host=1)
+    db.init_app(prep_application)
+    return prep_application
 
 
 application = create_app()
