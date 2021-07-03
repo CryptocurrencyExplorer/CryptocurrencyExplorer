@@ -30,7 +30,7 @@ def create_app():
 
 def process_block(item):
     if item is not None:
-        return f'Processing block {item}'
+        return f'Processing block {item} / {the_blocks[-1]}'
 
 
 def lets_boogy(the_blocks):
