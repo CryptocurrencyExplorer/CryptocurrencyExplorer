@@ -14,9 +14,6 @@ class Addresses(db.Model):
     amount = db.Column(db.Numeric,
                        unique=False,
                        nullable=False)
-    balance = db.Column(db.Numeric,
-                        unique=False,
-                        nullable=False)
     in_block = db.Column(db.Integer,
                          unique=False,
                          nullable=False)
@@ -92,9 +89,6 @@ class Blocks(db.Model):
     transaction_fees = db.Column(db.Numeric,
                                  unique=False,
                                  nullable=False)
-    total_out = db.Column(db.Numeric,
-                          unique=False,
-                          nullable=False)
 
 
 class BlockTXs(db.Model):

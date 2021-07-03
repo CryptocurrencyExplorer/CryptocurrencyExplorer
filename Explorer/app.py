@@ -15,12 +15,12 @@ from sqlalchemy.sql import desc
 from werkzeug.middleware.proxy_fix import ProxyFix
 from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired, Length
-from helpers import format_difficulty, format_transaction_length, format_time
-from helpers import generate_front_page_blocks, generate_previous_and_next_block
+from helpers import format_time
+from helpers import generate_front_page_blocks
 from config import coin_name, rpcpassword, rpcport, rpcuser
 from config import app_key, csrf_key, database_uri
 from models import db
-from models import Blocks
+from models import Blocks, BlockTXs
 
 try:
     cryptocurrency = AuthServiceProxy(f"http://{rpcuser}:{rpcpassword}@127.0.0.1:{rpcport}")
@@ -142,64 +142,60 @@ def redirect_to_block():
 @application.get("/block/<block_hash_or_height>/")
 def block(block_hash_or_height):
     try:
-        if int(block_hash_or_height) in range(0, cryptocurrency.getblockcount() + 1):
-            block_raw_hash = cryptocurrency.getblockhash(int(block_hash_or_height))
-            the_block = cryptocurrency.getblock(block_raw_hash)
-            previous_block_hash, next_block_hash = generate_previous_and_next_block(cryptocurrency, the_block)
-            value_out = 0
-            for number, this_transaction in enumerate(the_block['tx']):
-                # TODO - this needs pulled from blockchain/*.py
-                # This is wrong, which is known.
-                if the_block['height'] == 0:
-                    genesis_transaction = "38db759b7839bab107e8bf1108c66e17ab7f7c4607f9a606577e4165d5cf40d6"
-                    genesis_hex = "010000000100000000000000000000000000000000" \
-                                  "00000000000000000000000000000000ffffffff0e" \
-                                  "04e0c146540101062f503253482fffffffff0100e1" \
-                                  "f505000000002321022fe5dce550c108cfe6f2b0be" \
-                                  "d99f6f0f6fdcbbda124795d22cfd7204e249f4feac00000000"
-                    raw_block_tx = cryptocurrency.decoderawtransaction(genesis_hex)
-                else:
-                    raw_block_tx = cryptocurrency.getrawtransaction(this_transaction, 1)
-                value_out += sum([x['value'] for x in raw_block_tx['vout']])
+        the_block_height = int(block_hash_or_height)
+    except ValueError:
+        the_block_height = int(db.session.query(Blocks).filter_by(hash=block_hash_or_height).first().height)
+        if the_block_height is None:
+            return render_template('404.html', error="Not a valid block height/hash"), 404
+
+    latest_block_height = int(db.session.query(Blocks).order_by(desc('height')).first().height)
+    if the_block_height in range(0, latest_block_height + 1):
+        the_block = db.session.query(Blocks).filter_by(height=the_block_height).first()
+        if the_block is not None:
+            block_hash = the_block.hash
+            if the_block_height != 0:
+                previous_block_hash = the_block.prevhash
+            else:
+                previous_block_hash = None
+
+            if the_block_height != latest_block_height:
+                next_block_hash = the_block.nexthash
+            else:
+                next_block_hash = None
+
+            version = the_block.version
+            merkle_root = the_block.merkleroot
+            the_time = the_block.time
+            formatted_time = format_time(the_block.time)
+            difficulty = the_block.difficulty
+            bits = the_block.bits
+            cumulative_difficulty = the_block.cumulative_difficulty
+            nonce = the_block.nonce
+            transactions = len(db.session.query(BlockTXs).filter_by(block_height=the_block_height).all())
+            value_out = the_block.value_out
+            transaction_fees = 'PLACEHOLDER'
+
             return render_template('block.html',
-                                   the_block=the_block,
+                                   block_hash=block_hash,
                                    previous_block_hash=previous_block_hash,
                                    next_block_hash=next_block_hash,
-                                   format_time=format_time,
-                                   format_difficulty=format_difficulty,
-                                   format_transaction_length=format_transaction_length,
-                                   value_out=value_out)
+                                   block_height=the_block_height,
+                                   version=version,
+                                   merkle_root=merkle_root,
+                                   time=the_time,
+                                   formatted_time=formatted_time,
+                                   difficulty=difficulty,
+                                   bits=bits,
+                                   cumulative_difficulty=cumulative_difficulty,
+                                   nonce=nonce,
+                                   total_transactions=transactions,
+                                   value_out=value_out,
+                                   transaction_fees=transaction_fees,
+                                   average_coin_age='?')
         else:
             return render_template('404.html', error="Not a valid block height/hash"), 404
-    except ValueError:
-        try:
-            the_block = cryptocurrency.getblock(block_hash_or_height)
-            previous_block_hash, next_block_hash = generate_previous_and_next_block(cryptocurrency, the_block)
-            value_out = 0
-            for number, this_transaction in enumerate(the_block['tx']):
-                if the_block['height'] == 0:
-                    # TODO - this needs pulled from blockchain/*.py
-                    # This is wrong, which is known.
-                    genesis_transaction = "38db759b7839bab107e8bf1108c66e17ab7f7c4607f9a606577e4165d5cf40d6"
-                    genesis_hex = "010000000100000000000000000000000000000000" \
-                                  "00000000000000000000000000000000ffffffff0e" \
-                                  "04e0c146540101062f503253482fffffffff0100e1" \
-                                  "f505000000002321022fe5dce550c108cfe6f2b0be" \
-                                  "d99f6f0f6fdcbbda124795d22cfd7204e249f4feac00000000"
-                    raw_block_tx = cryptocurrency.decoderawtransaction(genesis_hex)
-                else:
-                    raw_block_tx = cryptocurrency.getrawtransaction(this_transaction, 1)
-                value_out += sum([x['value'] for x in raw_block_tx['vout']])
-            return render_template('block.html',
-                                   the_block=the_block,
-                                   previous_block_hash=previous_block_hash,
-                                   next_block_hash=next_block_hash,
-                                   format_time=format_time,
-                                   format_difficulty=format_difficulty,
-                                   format_transaction_length=format_transaction_length,
-                                   value_out=value_out)
-        except JSONRPCException:
-            return render_template('404.html', error="Not a valid block height/hash"), 404
+    else:
+        return render_template('404.html', error="Not a valid block height/hash"), 404
 
 
 @application.get("/api/")

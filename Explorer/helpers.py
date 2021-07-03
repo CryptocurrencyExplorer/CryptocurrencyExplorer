@@ -3,13 +3,6 @@ import decimal
 from sqlalchemy.sql import desc
 from models import Blocks
 
-def format_difficulty(difficulty):
-    return f'{decimal.Decimal(difficulty):.8f}'
-
-
-def format_transaction_length(transactions):
-    return len(transactions)
-
 
 def format_time(timestamp):
     return datetime.datetime.fromtimestamp(timestamp)
@@ -37,19 +30,3 @@ def generate_front_page_blocks(db):
             # TODO
             front_page_blocks[each.height]['fees'] = decimal.Decimal(0.00000000)
     return sorted(front_page_blocks.items(), reverse=True)
-
-
-def generate_previous_and_next_block(cryptocurrency, the_block):
-    if the_block['height'] != 0:
-        previous_hash_height = the_block['height'] - 1
-        previous_block_raw_hash = cryptocurrency.getblockhash(previous_hash_height)
-        previous_block = cryptocurrency.getblock(previous_block_raw_hash)
-    else:
-        previous_block = {'hash': None}
-    if the_block['height'] != cryptocurrency.getblockcount():
-        next_hash_height = the_block['height'] + 1
-        next_block_raw_hash = cryptocurrency.getblockhash(next_hash_height)
-        next_block = cryptocurrency.getblock(next_block_raw_hash)
-    else:
-        next_block = {'hash': None}
-    return previous_block['hash'], next_block['hash']

@@ -3,7 +3,6 @@ import sys
 from bitcoinrpc.authproxy import AuthServiceProxy, JSONRPCException
 import click
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.sql import desc
 from sqlalchemy.exc import OperationalError
@@ -258,7 +257,6 @@ if __name__ == '__main__':
         if 'database' in str(e) and 'does not exist' in str(e):
             print("You'll need to follow the documentation to create the database.")
             print("This isn't possible through Flask right now (issue \#15 in the Github repo).")
-
     else:
         while True:
             user_input = input('(C)ontinue, (D)rop all, or (E)xit?: ').lower()
