@@ -15,18 +15,10 @@ def generate_front_page_blocks(db):
         front_page_blocks[each.height] = {}
         front_page_blocks[each.height]['block_height'] = each.height
         front_page_blocks[each.height]['block_hash'] = each.hash
-        # TODO
-        how_many_transactions = 9001
-        # TODO
-        front_page_blocks[each.height]['total_transactions'] = 9001
+        front_page_blocks[each.height]['total_transactions'] = each.transactions
         front_page_blocks[each.height]['formatted_time'] = each.time
         front_page_blocks[each.height]['difficulty'] = each.difficulty
-        # TODO
         front_page_blocks[each.height]['total_out'] = f'{each.value_out:.8f}'
-        if how_many_transactions == 1:
-            # TODO
-            front_page_blocks[each.height]['fees'] = decimal.Decimal(0.00000000)
-        else:
-            # TODO
-            front_page_blocks[each.height]['fees'] = decimal.Decimal(0.00000000)
+        # TODO
+        front_page_blocks[each.height]['fees'] = decimal.Decimal(0.00000000)
     return sorted(front_page_blocks.items(), reverse=True)
