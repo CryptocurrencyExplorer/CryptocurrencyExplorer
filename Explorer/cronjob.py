@@ -28,6 +28,11 @@ def lets_boogy(the_blocks):
     else:
         total_cumulative_difficulty = db.session.query(Blocks).order_by(
                                       desc('cumulative_difficulty')).first().cumulative_difficulty
+        current_block = db.session.query(Blocks).order_by(desc('height')).first()
+        if current_block.nexthash == 'PLACEHOLDER':
+            next_block_hash = cryptocurrency.getblockhash(current_block.height + 1)
+            current_block.nexthash = next_block_hash
+            db.session.commit()
 
     for block_height in the_blocks:
         total_value_out = decimal.Decimal(0.0)
@@ -61,7 +66,6 @@ def lets_boogy(the_blocks):
                              version=raw_block_tx['version'],
                              locktime=raw_block_tx['locktime'])
                 db.session.add(the_tx)
-                db.session.commit()
 
                 how_many_vin = len(raw_block_tx['vin'])
                 how_many_vout = len(raw_block_tx['vout'])
@@ -75,7 +79,6 @@ def lets_boogy(the_blocks):
                                                    scriptpubkey='test',
                                                    address=vout['scriptPubKey']['addresses'][0])
                     db.session.add(commit_transaction_out)
-                    db.session.commit()
 
                 for vin in raw_block_tx['vin']:
                     if number == 0:
@@ -83,7 +86,6 @@ def lets_boogy(the_blocks):
                                                        scriptsig=vin['coinbase'],
                                                        sequence=vin['sequence'])
                         db.session.add(commit_coinbase)
-                        db.session.commit()
                     else:
                         commit_transaction_in = TXIn(tx_id=this_transaction,
                                                      n=number,
@@ -93,7 +95,6 @@ def lets_boogy(the_blocks):
                                                      # TODO - Witness actually needs supported
                                                      witness=None)
                         db.session.add(commit_transaction_in)
-                        db.session.commit()
                         # if 'vout' in vin and 'txid' in vin:
                             # If this transaction is referenced, this should never be invalid.
                             # Not sure if that's even possible.
@@ -106,13 +107,20 @@ def lets_boogy(the_blocks):
                                                          # TODO - This needs pulled from bootstrap
                                                          # TODO - Witness actually needs supported
                                                          # witness=None)
-
-        if block_height == 0:
+            if block_height == 0:
+                prev_block_hash='0000000000000000000000000000000000000000000000000000000000000000'
+                next_block_hash = the_block['nextblockhash']
+            elif block_height != the_blocks[-1]:
+                prev_block_hash = the_block['previousblockhash']
+                next_block_hash = the_block['nextblockhash']
+            elif block_height == the_blocks[-1]:
+                prev_block_hash = the_block['previousblockhash']
+                next_block_hash = 'PLACEHOLDER'
             this_blocks_info = Blocks(height=the_block['height'],
                                       hash=the_block['hash'],
                                       version=the_block['version'],
-                                      prevhash='0000000000000000000000000000000000000000000000000000000000000000',
-                                      nexthash=the_block['nextblockhash'],
+                                      prevhash=prev_block_hash,
+                                      nexthash=next_block_hash,
                                       merkleroot=the_block['merkleroot'],
                                       time=the_block['time'],
                                       bits=the_block['bits'],
@@ -121,44 +129,9 @@ def lets_boogy(the_blocks):
                                       difficulty=decimal.Decimal(the_block['difficulty']),
                                       cumulative_difficulty=total_cumulative_difficulty,
                                       value_out=total_value_out,
-                                      transaction_fees=decimal.Decimal(1.0),
-                                      total_out=decimal.Decimal(1.0))
-        # block_height is not the most recent
-        elif block_height != the_blocks[-1]:
-            this_blocks_info = Blocks(height=the_block['height'],
-                                      hash=the_block['hash'],
-                                      version=the_block['version'],
-                                      prevhash=the_block['previousblockhash'],
-                                      nexthash=the_block['nextblockhash'],
-                                      merkleroot=the_block['merkleroot'],
-                                      time=the_block['time'],
-                                      bits=the_block['bits'],
-                                      nonce=the_block['nonce'],
-                                      size=the_block['size'],
-                                      difficulty=decimal.Decimal(the_block['difficulty']),
-                                      cumulative_difficulty=total_cumulative_difficulty,
-                                      value_out=total_value_out,
-                                      transaction_fees=decimal.Decimal(1.0),
-                                      total_out=decimal.Decimal(1.0))
-        # block_height IS the most recent
-        else:
-            this_blocks_info = Blocks(height=the_block['height'],
-                                      hash=the_block['hash'],
-                                      version=the_block['version'],
-                                      prevhash=the_block['previousblockhash'],
+                                      transactions=how_many_transactions,
                                       # TODO
-                                      # This needs to be replaced when this stops being the most recent block
-                                      nexthash='PLACEHOLDER',
-                                      merkleroot=the_block['merkleroot'],
-                                      time=the_block['time'],
-                                      bits=the_block['bits'],
-                                      nonce=the_block['nonce'],
-                                      size=the_block['size'],
-                                      difficulty=decimal.Decimal(the_block['difficulty']),
-                                      cumulative_difficulty=total_cumulative_difficulty,
-                                      value_out=total_value_out,
-                                      transaction_fees=decimal.Decimal(1.0),
-                                      total_out=decimal.Decimal(1.0))
+                                      transaction_fees=decimal.Decimal(1.0))
         db.session.add(this_blocks_info)
         db.session.commit()
         print(f"committed block {block_height}")

@@ -86,6 +86,9 @@ class Blocks(db.Model):
     value_out = db.Column(db.Numeric,
                           unique=False,
                           nullable=False)
+    transactions = db.Column(db.Integer,
+                             unique=False,
+                             nullable=False)
     transaction_fees = db.Column(db.Numeric,
                                  unique=False,
                                  nullable=False)

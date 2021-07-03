@@ -39,6 +39,11 @@ def lets_boogy(the_blocks):
     else:
         total_cumulative_difficulty = db.session.query(Blocks).order_by(
                                       desc('cumulative_difficulty')).first().cumulative_difficulty
+        current_block = db.session.query(Blocks).order_by(desc('height')).first()
+        if current_block.nexthash == 'PLACEHOLDER':
+            next_block_hash = cryptocurrency.getblockhash(current_block.height + 1)
+            current_block.nexthash = next_block_hash
+            db.session.commit()
 
     with click.progressbar(the_blocks, item_show_func=process_block) as progress_bar:
         for block_height in progress_bar:
@@ -112,65 +117,31 @@ def lets_boogy(the_blocks):
                                                              # TODO - This needs pulled from bootstrap
                                                              # TODO - Witness actually needs supported
                                                              # witness=None)
-
             if block_height == 0:
-                this_blocks_info = Blocks(height=the_block['height'],
-                                          hash=the_block['hash'],
-                                          version=the_block['version'],
-                                          prevhash='0000000000000000000000000000000000000000000000000000000000000000',
-                                          nexthash=the_block['nextblockhash'],
-                                          merkleroot=the_block['merkleroot'],
-                                          time=the_block['time'],
-                                          bits=the_block['bits'],
-                                          nonce=the_block['nonce'],
-                                          size=the_block['size'],
-                                          difficulty=decimal.Decimal(the_block['difficulty']),
-                                          cumulative_difficulty=total_cumulative_difficulty,
-                                          value_out=total_value_out,
-                                          # TODO
-                                          transaction_fees=decimal.Decimal(1.0),
-                                          # TODO
-                                          total_out=decimal.Decimal(1.0))
-            # block_height is not the most recent
+                prev_block_hash = '0000000000000000000000000000000000000000000000000000000000000000'
+                next_block_hash = the_block['nextblockhash']
             elif block_height != the_blocks[-1]:
-                this_blocks_info = Blocks(height=the_block['height'],
-                                          hash=the_block['hash'],
-                                          version=the_block['version'],
-                                          prevhash=the_block['previousblockhash'],
-                                          nexthash=the_block['nextblockhash'],
-                                          merkleroot=the_block['merkleroot'],
-                                          time=the_block['time'],
-                                          bits=the_block['bits'],
-                                          nonce=the_block['nonce'],
-                                          size=the_block['size'],
-                                          difficulty=decimal.Decimal(the_block['difficulty']),
-                                          cumulative_difficulty=total_cumulative_difficulty,
-                                          value_out=total_value_out,
-                                          # TODO
-                                          transaction_fees=decimal.Decimal(1.0),
-                                          # TODO
-                                          total_out=decimal.Decimal(1.0))
-            # block_height IS the most recent
-            else:
-                this_blocks_info = Blocks(height=the_block['height'],
-                                          hash=the_block['hash'],
-                                          version=the_block['version'],
-                                          prevhash=the_block['previousblockhash'],
-                                          # TODO
-                                          # This needs to be replaced when this stops being the most recent block
-                                          nexthash='PLACEHOLDER',
-                                          merkleroot=the_block['merkleroot'],
-                                          time=the_block['time'],
-                                          bits=the_block['bits'],
-                                          nonce=the_block['nonce'],
-                                          size=the_block['size'],
-                                          difficulty=decimal.Decimal(the_block['difficulty']),
-                                          cumulative_difficulty=total_cumulative_difficulty,
-                                          value_out=total_value_out,
-                                          # TODO
-                                          transaction_fees=decimal.Decimal(1.0),
-                                          # TODO
-                                          total_out=decimal.Decimal(1.0))
+                prev_block_hash = the_block['previousblockhash']
+                next_block_hash = the_block['nextblockhash']
+            elif block_height == the_blocks[-1]:
+                prev_block_hash = the_block['previousblockhash']
+                next_block_hash = 'PLACEHOLDER'
+            this_blocks_info = Blocks(height=the_block['height'],
+                                      hash=the_block['hash'],
+                                      version=the_block['version'],
+                                      prevhash=prev_block_hash,
+                                      nexthash=next_block_hash,
+                                      merkleroot=the_block['merkleroot'],
+                                      time=the_block['time'],
+                                      bits=the_block['bits'],
+                                      nonce=the_block['nonce'],
+                                      size=the_block['size'],
+                                      difficulty=decimal.Decimal(the_block['difficulty']),
+                                      cumulative_difficulty=total_cumulative_difficulty,
+                                      value_out=total_value_out,
+                                      transactions=how_many_transactions,
+                                      # TODO
+                                      transaction_fees=decimal.Decimal(1.0))
             db.session.add(this_blocks_info)
             db.session.commit()
 
