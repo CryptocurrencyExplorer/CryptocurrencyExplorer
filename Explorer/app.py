@@ -29,7 +29,7 @@ except ValueError:
     sys.exit()
 
 
-def create_app():
+def create_app(csrf):
     prep_application = Flask(__name__)
     prep_application.debug = True
     prep_application.logger.setLevel(logging.INFO)
@@ -50,12 +50,13 @@ def create_app():
     # app.config['SESSION_COOKIE_SECURE'] = True
     prep_application.wsgi_app = ProxyFix(prep_application.wsgi_app, x_proto=1, x_host=1)
     db.init_app(prep_application)
+    csrf.init_app(prep_application)
     return prep_application
 
 
-application = create_app()
+csrf = CSRFProtect()
+application = create_app(csrf)
 application.app_context().push()
-csrf = CSRFProtect(application)
 
 
 @application.errorhandler(CSRFError)
