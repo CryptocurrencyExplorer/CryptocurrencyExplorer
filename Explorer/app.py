@@ -16,7 +16,6 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired, Length
 from helpers import format_time
-from helpers import generate_front_page_blocks
 from config import coin_name, rpcpassword, rpcport, rpcuser
 from config import app_key, csrf_key, database_uri
 from models import db
@@ -115,6 +114,22 @@ def validate_search(search_term):
 @application.post("/")
 def index():
     form = SearchForm(request.form)
+    count = request.args.get('count', default=50, type=int)
+    if 1 <= count <= 500:
+        count = count
+    else:
+        count = 25
+
+    latest_block_height = int(db.session.query(Blocks).order_by(desc('height')).first().height)
+    hi = request.args.get('hi', default=latest_block_height,type=int)
+    try:
+        if hi in range(0, latest_block_height + 1):
+            hi = hi
+        else:
+            hi = latest_block_height
+    except ValueError:
+        hi = latest_block_height
+
     if request.method == 'POST' and form.validate_on_submit():
         try:
             input_data = int(form.search.data)
@@ -128,15 +143,15 @@ def index():
                 else:
                     return redirect(url_for('index'))
         else:
-            latest_block_height = int(db.session.query(Blocks).order_by(desc('height')).first().height)
             if input_data in range(0, latest_block_height + 1):
                 return redirect(url_for('block', block_hash_or_height=input_data))
             else:
                 return redirect(url_for('index'))
 
+    front_page_items = db.session.query(Blocks).where(Blocks.height<=hi).order_by(desc('height')).limit(count)
     return render_template('index.html',
                            form=form,
-                           front_page_blocks=generate_front_page_blocks(db),
+                           front_page_blocks=front_page_items,
                            format_time=format_time)
 
 

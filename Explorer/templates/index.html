@@ -18,7 +18,7 @@
 {% block additional_body %}
             <table class="table table-striped table-hover"><tr><th>Block</th><th>Time (UTC)</th><th>Transactions</th><th>Value Out</th><th>Difficulty</th><th>Outstanding</th><th>Average Age</th></tr>
                 {% for each in front_page_blocks %}
-                 <tr><td><a href="/block/{{ each[1]['block_hash'] }}">{{ each[0] }}</a></td><td>{{ format_time(each[1]['formatted_time']) }}</td><td>{{ each[1]['total_transactions'] }}</td><td>{{ each[1]['total_out'] }}</td><td>{{ each[1]['difficulty'] }}</td><td>?</td><td>?</td></tr>
+                 <tr><td><a href="/block/{{ each.block_hash }}">{{ each.height }}</a></td><td>{{ format_time(each.time) }}</td><td>{{ each.transactions }}</td><td>{{ each.value_out }}</td><td>{{ each.difficulty }}</td><td>?</td><td>?</td></tr>
                 {% endfor %}
             </table>
 {% endblock %}
