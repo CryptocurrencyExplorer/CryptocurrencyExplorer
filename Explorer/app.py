@@ -117,18 +117,23 @@ def index():
     form = SearchForm(request.form)
     if request.method == 'POST' and form.validate_on_submit():
         try:
-            if int(form.search.data) in range(0, cryptocurrency.getblockcount() + 1):
-                return redirect(url_for('block', block_hash_or_height=int(form.search.data)))
+            input_data = int(form.search.data)
         except ValueError:
             try:
-                if cryptocurrency.getblock(form.search.data)['hash']:
+                if db.session.query(Blocks).filter_by(hash=form.search.data).first():
                     return redirect(url_for('block', block_hash_or_height=form.search.data))
             except JSONRPCException:
                 if cryptocurrency.validateaddress(form.search.data)['isvalid']:
                     return redirect(url_for('api__validate_address', address=form.search.data))
                 else:
-                    return make_response(jsonify({'message': 'todo',
-                                                  'error': 'todo'}), 200)
+                    return redirect(url_for('index'))
+        else:
+            latest_block_height = int(db.session.query(Blocks).order_by(desc('height')).first().height)
+            if input_data in range(0, latest_block_height + 1):
+                return redirect(url_for('block', block_hash_or_height=input_data))
+            else:
+                return redirect(url_for('index'))
+
     return render_template('index.html',
                            form=form,
                            front_page_blocks=generate_front_page_blocks(db),
@@ -145,7 +150,7 @@ def block(block_hash_or_height):
     try:
         the_block_height = int(block_hash_or_height)
     except ValueError:
-        the_block_height = int(db.session.query(Blocks).filter_by(hash=block_hash_or_height).first().height)
+        the_block_height = int(db.session.query(Blocks).filter_by(hash=block_hash_or_height.lower()).first().height)
         if the_block_height is None:
             return render_template('404.html', error="Not a valid block height/hash"), 404
 
@@ -174,6 +179,7 @@ def block(block_hash_or_height):
             nonce = the_block.nonce
             transactions = len(db.session.query(BlockTXs).filter_by(block_height=the_block_height).all())
             value_out = the_block.value_out
+            # TODO
             transaction_fees = 'PLACEHOLDER'
 
             return render_template('block.html',
@@ -192,11 +198,30 @@ def block(block_hash_or_height):
                                    total_transactions=transactions,
                                    value_out=value_out,
                                    transaction_fees=transaction_fees,
+                                   # TODO
                                    average_coin_age='?')
         else:
             return render_template('404.html', error="Not a valid block height/hash"), 404
     else:
         return render_template('404.html', error="Not a valid block height/hash"), 404
+
+
+@application.get("/tx/")
+def redirect_to_tx():
+    return redirect(url_for('tx', transaction="INVALID_TRANSACTION"))
+
+
+@application.get("/tx/<transaction>")
+def tx(transaction):
+    # TODO - Transactions actually need done
+    # Though, in order to finish this, addresses need done first
+    check_transaction = db.session.query(BlockTXs).filter_by(tx_id=transaction.lower()).first()
+    if check_transaction is not None:
+        return make_response(jsonify({'message': 'valid',
+                                      'error': 'todo'}), 200)
+    else:
+        return make_response(jsonify({'message': 'invalid',
+                                      'error': 'todo'}), 200)
 
 
 @application.get("/api/")
@@ -249,11 +274,11 @@ def api__confirmations(userinput_block_height):
     except ValueError:
         # not a block number, check if it's a hash
         try:
-            userinput_block_hash = db.session.query(Blocks).filter_by(hash=userinput_block_height).first()
-            if userinput_block_hash is not None:
-                userinput_block_height = int(userinput_block_hash.height)
+            block_lookup = db.session.query(Blocks).filter_by(hash=userinput_block_height.lower()).first()
+            if block_lookup is not None:
+                user_block_height = int(block_lookup.height)
                 latest_block_height = int(db.session.query(Blocks).order_by(desc('height')).first().height)
-                block_confirmations = (latest_block_height + 1) - userinput_block_height
+                block_confirmations = (latest_block_height + 1) - user_block_height
                 return make_response(jsonify({'confirmations': block_confirmations,
                                               'error': 'none'}), 200)
             else:
