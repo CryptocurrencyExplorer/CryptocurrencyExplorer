@@ -152,7 +152,9 @@ def index():
     return render_template('index.html',
                            form=form,
                            front_page_blocks=front_page_items,
-                           format_time=format_time)
+                           format_time=format_time,
+                           count=count,
+                           hi=hi)
 
 
 @application.get("/block/")
