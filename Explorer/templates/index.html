@@ -22,6 +22,7 @@
                  <tr><td><a href="/block/{{ each.hash }}">{{ each.height }}</a></td><td>{{ format_time(each.time) }}</td><td>{{ each.transactions }}</td><td>{{ each.value_out }}</td><td>{{ each.difficulty }}</td><td>?</td><td>?</td></tr>
                 {% endfor %}
             </table>
+    <p class="pull-right"><a href="?count={{ count }}"><<</a> <a href="?hi={{ hi + count }}&count={{ count }}"><</a> <a href="?hi={{ hi - count }}&count={{ count }}">></a> <a href="?hi={{ count - 1 }}&count={{ count }}">>></a> <a href="?count=20&hi={{ hi }}"> 20</a> <a href="?count=50&hi={{ hi }}"> 50</a> <a href="?count=125&hi={{ hi }}"> 125</a> <a href="?count=250&hi={{ hi }}"> 250</a> <a href="?count=500&hi={{ hi }}"> 500</a> <a href="/">Search</a></p>
 {% endblock %}
 
 {% block footer %}{{ super() }}{% endblock %}
