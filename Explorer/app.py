@@ -124,7 +124,10 @@ def index():
     hi = request.args.get('hi', default=latest_block_height,type=int)
     try:
         if hi in range(0, latest_block_height + 1):
-            hi = hi
+            if hi != count - 1:
+                hi = count - 1
+            else:
+                hi = hi
         else:
             hi = latest_block_height
     except ValueError:
