@@ -121,17 +121,16 @@ def index():
         count = 25
 
     latest_block_height = int(db.session.query(Blocks).order_by(desc('height')).first().height)
-    hi = request.args.get('hi', default=latest_block_height,type=int)
+    hi = request.args.get('hi', default=latest_block_height, type=int)
     try:
         if hi in range(0, latest_block_height + 1):
-            if hi != count - 1:
-                hi = count - 1
-            else:
-                hi = hi
+            hi = hi
         else:
-            hi = latest_block_height
+            hi = 0
     except ValueError:
-        hi = latest_block_height
+        hi = 0
+
+    front_page_items = db.session.query(Blocks).where(Blocks.height <= hi).order_by(desc('height')).limit(count)
 
     if request.method == 'POST' and form.validate_on_submit():
         try:
@@ -149,15 +148,20 @@ def index():
             if input_data in range(0, latest_block_height + 1):
                 return redirect(url_for('block', block_hash_or_height=input_data))
             else:
-                return redirect(url_for('index'))
-
-    front_page_items = db.session.query(Blocks).where(Blocks.height<=hi).order_by(desc('height')).limit(count)
+                return render_template('index.html',
+                                       form=form,
+                                       front_page_blocks=front_page_items,
+                                       format_time=format_time,
+                                       count=count,
+                                       hi=hi,
+                                       latest_block=latest_block_height)
     return render_template('index.html',
                            form=form,
                            front_page_blocks=front_page_items,
                            format_time=format_time,
                            count=count,
-                           hi=hi)
+                           hi=hi,
+                           latest_block=latest_block_height)
 
 
 @application.get("/block/")
