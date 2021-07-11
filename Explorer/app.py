@@ -115,10 +115,13 @@ def validate_search(search_term):
 def index():
     form = SearchForm(request.form)
     count = request.args.get('count', default=50, type=int)
-    if 1 <= count <= 500:
-        count = count
-    else:
-        count = 25
+    try:
+        if 1 <= count <= 500:
+            count = count
+        else:
+            count = 25
+    except ValueError:
+        count = 1
 
     latest_block_height = int(db.session.query(Blocks).order_by(desc('height')).first().height)
     hi = request.args.get('hi', default=latest_block_height, type=int)
@@ -174,8 +177,10 @@ def block(block_hash_or_height):
     try:
         the_block_height = int(block_hash_or_height)
     except ValueError:
-        the_block_height = int(db.session.query(Blocks).filter_by(hash=block_hash_or_height.lower()).first().height)
-        if the_block_height is None:
+        try:
+            block_lookup = db.session.query(Blocks).filter_by(hash=block_hash_or_height.lower()).first()
+            the_block_height = int(block_lookup.height)
+        except(AttributeError, ValueError):
             return render_template('404.html', error="Not a valid block height/hash"), 404
 
     latest_block_height = int(db.session.query(Blocks).order_by(desc('height')).first().height)

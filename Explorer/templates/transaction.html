@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Transaction{{ super() }}{% endblock %}
+
+{% block head %}
+{{ super() }}
+{% endblock %}
+
+{% block additional_text %}<a href="/tx/{{ block_hash }}">{{ config.COIN_NAME }}</a> {{ block_height }}{% endblock %}
+
+{% block the_form %}
+{% endblock %}
+
+{% block start_body %}
+{{ super() }}
+{% endblock %}
+
+{% block additional_body %}
+        <p>
+            Hash: TRANSACTION HASH<br />
+            Appeared in <a href="../block/BLOCK_NUMBER">BLOCK NUMBER</a> (TIME)<br />
+            Number of inputs: 1 (<a href="#inputs">Jump to inputs</a>)<br />
+            Total in: <br />
+            Number of outputs: 1 (<a href="#outputs">Jump to outputs</a>)<br />
+            Total out: 0.66360787<br />
+            Size: TODO<br />
+            Fee: TODO<br />
+        </p>
+        <a name="inputs"><h3>Inputs</h3></a>
+        <table class="table">
+            <tr><th>Index</th><th>Previous output</th><th>Amount</th><th>From address</th><th>ScriptSig</th></tr>
+            <tr>
+                <td><a name="i0">0</a></td>
+                <td>TODO</td>
+                <td>TODO</td>
+                <td>TODO</td>
+                <td>TODO</td>
+            </tr>
+        </table>
+        <a name="outputs"><h3>Outputs</h3></a>
+        <table class="table">
+            <tr><th>Index</th><th>Redeemed at input</th><th>Amount</th><th>To address</th><th>ScriptPubKey</th></tr>
+            <tr>
+                <td><a name="o0">0</a></td>
+                <td><a href="">TODO</a></td>
+                <td>TODO</td>
+                <td><a href="">TODO</a></td>
+                <td>TODO</td>
+            </tr>
+        </table>
+    </div>
+{% endblock %}
+
+{% block footer %}{{ super() }}{% endblock %}
