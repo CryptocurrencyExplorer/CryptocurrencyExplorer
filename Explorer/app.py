@@ -3,7 +3,6 @@
 # ----------------------------------------------
 # Use Python 3.3+ because of `decimal` issues:
 # https://docs.sqlalchemy.org/en/14/core/type_basics.html#sqlalchemy.types.Numeric
-import importlib
 import logging
 import sys
 from bitcoinrpc.authproxy import AuthServiceProxy, JSONRPCException
@@ -15,9 +14,10 @@ from sqlalchemy.sql import desc
 from werkzeug.middleware.proxy_fix import ProxyFix
 from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired, Length
-from helpers import format_time
+import blockchain
 from config import coin_name, rpcpassword, rpcport, rpcuser
-from config import app_key, csrf_key, database_uri
+from config import app_key, csrf_key, database_uri, program_name
+from helpers import average_age, format_time
 from models import db
 from models import Blocks, BlockTXs
 
@@ -33,11 +33,20 @@ def create_app(csrf):
     prep_application.debug = True
     prep_application.logger.setLevel(logging.INFO)
     prep_application.secret_key = app_key
-    # check blockchain/README.md for this
-    prep_application.config['COIN_NAME'] = ''
-    importlib.import_module('blockchain', prep_application.config['COIN_NAME'].lower())
+    if coin_name != '' or coin_name is not None:
+        # check blockchain/README.md for this
+        prep_application.config['COIN_NAME'] = coin_name.capitalize()
+    else:
+        print("coin_name in config.py needs to be set.")
+        sys.exit()
+    try:
+        getattr(blockchain, prep_application.config['COIN_NAME'])()
+    # TypeError needs caught in case someone tries non-strings for the coin_name... for whatever reason?
+    except(AttributeError, TypeError):
+        print("coin_name in config.py is not a supported coin.")
+        sys.exit()
     prep_application.config['MAX_CONTENT_LENGTH'] = 256
-    prep_application.config['PROGRAM_NAME'] = 'Cryptocurrency Explorer'
+    prep_application.config['PROGRAM_NAME'] = program_name
     prep_application.config['SESSION_COOKIE_NAME'] = 'csrf_token'
     prep_application.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     prep_application.config['SQLALCHEMY_DATABASE_URI'] = database_uri
@@ -56,6 +65,7 @@ def create_app(csrf):
 csrf = CSRFProtect()
 application = create_app(csrf)
 application.app_context().push()
+coin_uniques = getattr(blockchain, application.config['COIN_NAME'])().unique
 
 
 @application.errorhandler(CSRFError)
@@ -134,6 +144,7 @@ def index():
         hi = 0
 
     front_page_items = db.session.query(Blocks).where(Blocks.height <= hi).order_by(desc('height')).limit(count)
+    genesis_timestamp = coin_uniques['genesis']['timestamp']
 
     if request.method == 'POST' and form.validate_on_submit():
         try:
@@ -157,14 +168,18 @@ def index():
                                        format_time=format_time,
                                        count=count,
                                        hi=hi,
-                                       latest_block=latest_block_height)
+                                       latest_block=latest_block_height,
+                                       average_age=average_age,
+                                       genesis_time=genesis_timestamp)
     return render_template('index.html',
                            form=form,
                            front_page_blocks=front_page_items,
                            format_time=format_time,
                            count=count,
                            hi=hi,
-                           latest_block=latest_block_height)
+                           latest_block=latest_block_height,
+                           average_age=average_age,
+                           genesis_time=genesis_timestamp)
 
 
 @application.get("/block/")
@@ -206,7 +221,8 @@ def block(block_hash_or_height):
             bits = the_block.bits
             cumulative_difficulty = the_block.cumulative_difficulty
             nonce = the_block.nonce
-            transactions = len(db.session.query(BlockTXs).filter_by(block_height=the_block_height).all())
+            transactions = db.session.query(BlockTXs).filter_by(block_height=the_block_height).all()
+            how_many_transactions = len(transactions)
             value_out = the_block.value_out
             # TODO
             transaction_fees = 'PLACEHOLDER'
@@ -224,7 +240,8 @@ def block(block_hash_or_height):
                                    bits=bits,
                                    cumulative_difficulty=cumulative_difficulty,
                                    nonce=nonce,
-                                   total_transactions=transactions,
+                                   the_transactions=transactions,
+                                   total_transactions=how_many_transactions,
                                    value_out=value_out,
                                    transaction_fees=transaction_fees,
                                    # TODO

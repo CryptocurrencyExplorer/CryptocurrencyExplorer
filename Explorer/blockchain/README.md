@@ -8,32 +8,35 @@ specific about each. Such as, Woodcoin's blank genesis transaction.
 
 # Why am I being redirected here from app.py?
 
-``app.config['COIN_NAME']`` requires a valid filename reference
+``coin_name`` in config.py requires a valid filename reference
 from anything supported in the blockchain folder.
 
 This ensures specifics of the coin/token/etc are taken
 into account.
 
-The casing *shouldn't* matter as `importlib.import_module('blockchain', app.config['COIN_NAME'].lower())`
-is occuring in app.py - just make sure the filename exists.
+The casing doesn't matter as `coin_name.capitalize()`
+is occuring in app.py - just make sure the class exists in ``blockchain/__init__.py``.
 
-`app.config['COIN_NAME']` is also used within templates, so spelling out
+---
+
+`.config['COIN_NAME']` is also used within templates, so spelling out
 something like `Bitcoin` or `CryptocurrencyExplorerCoin` is fine
-if `app.config['COIN_NAME']` is properly referencing a file in the
+
+if `.config['COIN_NAME']` is properly referencing a file in the
 blockchain folder.
 
-Using a name that doesn't exist will probably mess something
-up. It also hasn't been tested and probably won't be.
+---
+
+Using a name that doesn't exist might mess something up, and has been
+prevented via a sys.exit().
+
+Lacking a name hasn't been tested fully and not setting this will probably break something.
 
 # Adding new coins/tokens/etc
 
 ### Filenames
-- All filenames within the blockchain file are lowercase.
-- If a coin ( "CryptocurrencyExplorerCoin" ) is forked
-  ( "CryptocurrencyExplorerCoin 2" ), that forked version's filename
-  within /blockchain and thus ``app.config['COIN_NAME']`` should have
-  the space replaced with a dash ( cryptocurrencyexplorercoin-2.py ) .
+- All filenames within the blockchain file are capitalized.
+- Coins with spaces in them has't been tested.. <!-- TODO -->
 
 ### File formatting
-
-- TODO
+<!-- TODO -->

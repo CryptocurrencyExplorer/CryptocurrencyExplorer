@@ -5,7 +5,7 @@ autodetect_rpc = True
 autodetect_tables = True
 
 # Coin specific
-coin_name = None
+coin_name = "CryptocurrencyExplorerCoin"
 rpcpassword = None
 rpcport = None
 rpcuser = None
@@ -14,3 +14,4 @@ rpcuser = None
 app_key = rb"""app_key"""
 csrf_key = "csrf_key"
 database_uri = 'postgresql://postgres:db_password@localhost/db'
+program_name = 'Cryptocurrency Explorer'

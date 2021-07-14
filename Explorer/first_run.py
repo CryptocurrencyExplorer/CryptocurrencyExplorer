@@ -6,7 +6,8 @@ from flask import Flask
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.sql import desc
 from sqlalchemy.exc import OperationalError
-from blockchain import bootstrap
+import blockchain
+from blockchain import SUPPORTED_COINS
 from config import autodetect_coin, autodetect_config, autodetect_rpc, autodetect_tables
 from config import coin_name, rpcpassword, rpcport, rpcuser
 from config import app_key, csrf_key, database_uri
@@ -158,19 +159,31 @@ def detect_flask_config():
 def detect_coin(cryptocurrency):
     try:
         genesis_hash = cryptocurrency.getblockhash(0)
-        coin = bootstrap.get(genesis_hash)
-        if coin is not None:
-            if coin_name is None:
-                print(f"coin_name in config.py has been autodetected as the following: {coin}")
-            return coin
-        else:
-            print("This isn't a coin I'm aware of.")
-            sys.exit()
     except JSONRPCException as e:
         if '401 Authorization Required' in str(e):
             print("The rpcport is right but one or both these is wrong: rpcuser/rpcpassword.")
             print("Go into config.py and fix this.")
-            sys.exit()
+        sys.exit()
+    else:
+        # If it's already set, no reason to auto-detect it.
+        # Need this ran again? Make sure coin_name in config.py isn't anything in SUPPORTED_COINS
+        if coin_name.capitalize() not in SUPPORTED_COINS:
+            coin_found = False
+            for each in SUPPORTED_COINS:
+                try:
+                    the_coin = getattr(blockchain, each)()
+                    if the_coin.unique['genesis']['hash'] == genesis_hash:
+                        print(f'This coin was detected as: {each}')
+                        print(f'Please put "{each}" into config.py under `coin_name`')
+                        coin_found = True
+                        break
+                # TypeError needs caught in case someone tries non-strings for the coin_name... for whatever reason?
+                except(AttributeError, TypeError):
+                    pass
+            if not coin_found:
+                print("I wasn't able to auto-detect a coin/token.")
+                print("You're either trying something not supported or haven't followed the README for the project.")
+                sys.exit()
 
 
 def detect_tables():
