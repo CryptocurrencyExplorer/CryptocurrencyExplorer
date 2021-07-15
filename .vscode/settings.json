@@ -7,7 +7,7 @@
     "files.trimFinalNewlines": true,
     "python.linting.pylintUseMinimalCheckers": false,
     "[markdown]": {
-        "editor.wordWrap": "wordWrapColumn",
-        "editor.wordWrapColumn": 78,
+        "rewrap.autoWrap.enabled": true,
+        "rewrap.wrappingColumn": 78
     }
 }
