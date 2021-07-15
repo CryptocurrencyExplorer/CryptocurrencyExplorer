@@ -1,1 +1,3 @@
-/the_imports.py
+/.venv
+__pycache__
+/Explorer/config.py
