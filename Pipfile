@@ -1,0 +1,27 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+flask = "~=2.0"
+flask-wtf = "~=0.15"
+flask-sqlalchemy = "~=2.5"
+sqlalchemy = "~=1.4"
+werkzeug = "~=2.0"
+wtforms = "~=2.3"
+pybtc = "~=2.3"
+python-bitcoinrpc = "~=1.0"
+
+[dev-packages]
+setuptools = "*"
+importlib-metadata = "*"
+pip = "*"
+pipenv = "~=2020.5"
+# Not strictly needed, used by Jupyter
+ipykernel = "~=6.0"
+# Only needed for linting
+pylint = "~=2.9"
+
+[requires]
+python_version = "3.7"

@@ -1,0 +1,13 @@
+{
+    "python.analysis.extraPaths": [
+        "Explorer"
+    ],
+    "files.eol": "\n",
+    "files.insertFinalNewline": true,
+    "files.trimFinalNewlines": true,
+    "python.linting.pylintUseMinimalCheckers": false,
+    "[markdown]": {
+        "editor.wordWrap": "wordWrapColumn",
+        "editor.wordWrapColumn": 78,
+    }
+}
