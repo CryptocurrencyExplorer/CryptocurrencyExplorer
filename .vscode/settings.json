@@ -5,9 +5,15 @@
     "files.eol": "\n",
     "files.insertFinalNewline": true,
     "files.trimFinalNewlines": true,
-    "python.linting.pylintUseMinimalCheckers": false,
     "[markdown]": {
-        "editor.wordWrap": "wordWrapColumn",
-        "editor.wordWrapColumn": 78,
-    }
+        "rewrap.autoWrap.enabled": true,
+        "rewrap.wrappingColumn": 78
+    },
+    "python.linting.pylintEnabled": true,
+    "python.languageServer": "Pylance",
+    "python.linting.pylintArgs": [
+        "--rcfile=.pylintrc",
+        "--load-plugins=pylint_flask_sqlalchemy,pylint_flask"
+    ],
+    "python.linting.pylintUseMinimalCheckers": false
 }
