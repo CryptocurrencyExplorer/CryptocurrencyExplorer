@@ -45,5 +45,5 @@ If you need requirements files you can create them with:
 pipenv lock -r >requirements.txt
 pipenv lock -d >dev-requirements.txt
 ```
-When using Visual Studio Code, the virtualenv shoule get automatically
+When using Visual Studio Code, the virtualenv should get automatically
 activated.
