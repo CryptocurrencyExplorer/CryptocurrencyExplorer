@@ -165,8 +165,6 @@ def detect_coin(cryptocurrency):
             print("Go into config.py and fix this.")
         sys.exit()
     else:
-        # If it's already set, no reason to auto-detect it.
-        # Need this ran again? Make sure coin_name in config.py isn't anything in SUPPORTED_COINS
         if coin_name.capitalize() not in SUPPORTED_COINS:
             coin_found = False
             for each in SUPPORTED_COINS:
@@ -184,7 +182,10 @@ def detect_coin(cryptocurrency):
                 print("I wasn't able to auto-detect a coin/token.")
                 print("You're either trying something not supported or haven't followed the README for the project.")
                 sys.exit()
-
+        else:
+            coin_name_in_config = coin_name.capitalize()
+            print(f"It looks like you already have `{coin_name_in_config}` set as the coin_name in config.py")
+            print("Skipping auto-detection of coin because of this")
 
 def detect_tables():
     try:
