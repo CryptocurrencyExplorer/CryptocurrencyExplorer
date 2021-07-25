@@ -26,3 +26,14 @@ modified code available to users of the server.
 Setup
 ==========
 Please read [SETUP.md](SETUP.md)
+
+
+Sponsors
+==========
+
+This project is sponsored by [Privex Inc.](https://www.privex.io) - a Privacy Focused server hosting company located in Belize.
+
+Privex has both Virtual (VPS) and Dedicated Servers, starting from just US$0.99/mo.
+They accept various cryptocurrencies including Litecoin, Dogecoin, Monero, Bitcoin, Bitcoin Cash, EOS + more, and the only information they require is a name (can be an alias/pseudonym) and e-mail.
+Help support CryptocurrencyExplorer by ordering a server from [our sponsor: Privex (www.privex.io)](https://www.privex.io)
+
