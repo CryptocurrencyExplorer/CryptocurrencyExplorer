@@ -5,9 +5,11 @@
 # https://docs.sqlalchemy.org/en/14/core/type_basics.html#sqlalchemy.types.Numeric
 import logging
 import sys
+from decimal import Decimal
 from bitcoinrpc.authproxy import AuthServiceProxy, JSONRPCException
 from flask import Flask, jsonify, make_response, request
 from flask import redirect, url_for, render_template
+from flask.json import JSONEncoder
 from flask_wtf import FlaskForm
 from flask_wtf.csrf import CSRFError, CSRFProtect
 from sqlalchemy.sql import desc
@@ -28,6 +30,13 @@ except ValueError:
     sys.exit()
 
 
+class DecimalEncoder(JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Decimal):
+            return str(obj)
+        return JSONEncoder.default(self, obj)
+
+
 def create_app(csrf):
     prep_application = Flask(__name__)
     prep_application.debug = True
@@ -45,6 +54,8 @@ def create_app(csrf):
     except(AttributeError, TypeError):
         print("coin_name in config.py is not a supported coin.")
         sys.exit()
+    prep_application.json_encoder = DecimalEncoder
+    prep_application.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
     prep_application.config['MAX_CONTENT_LENGTH'] = 256
     prep_application.config['PROGRAM_NAME'] = program_name
     prep_application.config['SESSION_COOKIE_NAME'] = 'csrf_token'
@@ -285,6 +296,11 @@ def redirect_to_api__confirmations():
     return redirect(url_for('api__confirmations', userinput_block_height="0"))
 
 
+@application.get("/api/rawtx/")
+def redirect_to_api__rawtx():
+    return redirect(url_for('api__rawtx', transaction=""))
+
+
 @application.get("/api/receivedbyaddress/")
 def redirect_to_api__received_by_address():
     return redirect(url_for('api__received_by_address', address="INVALID_ADDRESS"))
@@ -351,6 +367,17 @@ def api__last_difficulty():
     latest_difficulty = float(db.session.query(Blocks).order_by(desc('height')).first().difficulty)
     return make_response(jsonify({'message': latest_difficulty,
                                   'error': 'none'}), 200)
+
+
+@application.get("/api/rawtx/<transaction>")
+def api__rawtx(transaction):
+    try:
+        the_transaction = cryptocurrency.getrawtransaction(transaction, 1)
+    except JSONRPCException:
+        return make_response(jsonify({'message': 'This transaction is invalid',
+                                      'error': 'invalid'}), 422)
+    else:
+        return make_response(jsonify(the_transaction), 200)
 
 
 @application.get("/api/receivedbyaddress/<address>")
