@@ -54,7 +54,7 @@ def create_app(csrf):
     except(AttributeError, TypeError):
         print("coin_name in config.py is not a supported coin.")
         sys.exit()
-    prep_application.json_encoder = DecimalEncoder
+    prep_application.config['JSON_ENCODER'] = DecimalEncoder
     prep_application.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
     prep_application.config['MAX_CONTENT_LENGTH'] = 256
     prep_application.config['PROGRAM_NAME'] = program_name
