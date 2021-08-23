@@ -1,7 +1,9 @@
 import decimal
+import logging
 import sys
 from bitcoinrpc.authproxy import AuthServiceProxy, JSONRPCException
 from flask import Flask
+from logging.handlers import RotatingFileHandler
 from sqlalchemy.sql import desc
 from config import rpcpassword, rpcport, rpcuser
 from config import database_uri
@@ -14,10 +16,16 @@ EMPTY = ''
 EXPECTED_TABLES = {'addresses', 'address_summary', 'blocks', 'blocktxs', 'coinbase_txin', 'txs', 'linked_txout',
                    'txout', 'linked_txin', 'txin'}
 
+
 def create_app():
     cronjob = Flask(__name__)
     cronjob.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     cronjob.config['SQLALCHEMY_DATABASE_URI'] = database_uri
+    # setup RotatingFileHandler with maxBytes set to 25MB
+    rotating_log = RotatingFileHandler('explorer_cronjob.log', maxBytes=25000000, backupCount=6)
+    cronjob.logger.addHandler(rotating_log)
+    rotating_log.setFormatter(logging.Formatter(fmt='[%(asctime)s] / %(levelname)s in %(module)s: %(message)s'))
+    cronjob.logger.setLevel(logging.INFO)
     db.init_app(cronjob)
     return cronjob
 
@@ -69,8 +77,8 @@ def lets_boogy(the_blocks):
 
                 how_many_vin = len(raw_block_tx['vin'])
                 how_many_vout = len(raw_block_tx['vout'])
-                print(f'vin: {how_many_vin}')
-                print(f'vout: {how_many_vout}')
+                #print(f'vin: {how_many_vin}')
+                #print(f'vout: {how_many_vout}')
 
                 for vout in raw_block_tx['vout']:
                     total_value_out += vout['value']
@@ -134,7 +142,7 @@ def lets_boogy(the_blocks):
                                       transaction_fees=decimal.Decimal(1.0))
         db.session.add(this_blocks_info)
         db.session.commit()
-        print(f"committed block {block_height}")
+        cronjob.logger.info(f"committed block {block_height}")
 
 
 if __name__ == '__main__':

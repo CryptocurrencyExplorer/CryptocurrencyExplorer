@@ -6,6 +6,7 @@
 import logging
 import sys
 from decimal import Decimal
+from logging.handlers import RotatingFileHandler
 from bitcoinrpc.authproxy import AuthServiceProxy, JSONRPCException
 from flask import Flask, jsonify, make_response, redirect
 from flask import request, url_for, render_template, session
@@ -23,12 +24,6 @@ from helpers import average_age, format_time
 from models import db
 from models import Blocks, BlockTXs
 
-try:
-    cryptocurrency = AuthServiceProxy(f"http://{rpcuser}:{rpcpassword}@127.0.0.1:{rpcport}")
-except ValueError:
-    print("One of these is wrong: rpcuser/rpcpassword/rpcport. Go into config.py and fix this.")
-    sys.exit()
-
 
 class DecimalEncoder(JSONEncoder):
     def default(self, obj):
@@ -41,19 +36,23 @@ def create_app(csrf):
     prep_application = Flask(__name__)
     prep_application.debug = False
     prep_application.json_encoder = DecimalEncoder
+    # setup RotatingFileHandler with maxBytes set to 25MB
+    rotating_log = RotatingFileHandler('cryptocurrency_explorer.log', maxBytes=25000000, backupCount=6)
+    prep_application.logger.addHandler(rotating_log)
+    rotating_log.setFormatter(logging.Formatter(fmt='[%(asctime)s] / %(levelname)s in %(module)s: %(message)s'))
     prep_application.logger.setLevel(logging.INFO)
     prep_application.secret_key = app_key
     if coin_name != '' or coin_name is not None:
         # check blockchain/README.md for this
         prep_application.config['COIN_NAME'] = coin_name.capitalize()
     else:
-        print("coin_name in config.py needs to be set.")
+        prep_application.logger.error("coin_name in config.py needs to be set.")
         sys.exit()
     try:
         coin_uniques = getattr(blockchain, prep_application.config['COIN_NAME'])().unique
     # TypeError needs caught in case someone tries non-strings for the coin_name... for whatever reason?
     except(AttributeError, TypeError):
-        print("coin_name in config.py is not a supported coin.")
+        prep_application.logger.error("coin_name in config.py is not a supported coin.")
         sys.exit()
     prep_application.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
     prep_application.config['MAX_CONTENT_LENGTH'] = 256
@@ -71,11 +70,16 @@ def create_app(csrf):
     prep_application.wsgi_app = ProxyFix(prep_application.wsgi_app, x_proto=1, x_host=1)
     db.init_app(prep_application)
     csrf.init_app(prep_application)
-    return prep_application, coin_uniques
+    try:
+        cryptocurrency = AuthServiceProxy(f"http://{rpcuser}:{rpcpassword}@127.0.0.1:{rpcport}")
+    except ValueError:
+        prep_application.logger.error("One of these is wrong: rpcuser/rpcpassword/rpcport. Fix this in config.py.")
+        sys.exit()
+    return prep_application, coin_uniques, cryptocurrency
 
 
 csrf = CSRFProtect()
-application, coin_uniques = create_app(csrf)
+application, coin_uniques, cryptocurrency = create_app(csrf)
 application.app_context().push()
 
 

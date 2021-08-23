@@ -1,7 +1,9 @@
 import decimal
+import logging
 import sys
-from bitcoinrpc.authproxy import AuthServiceProxy, JSONRPCException
 import click
+from logging.handlers import RotatingFileHandler
+from bitcoinrpc.authproxy import AuthServiceProxy, JSONRPCException
 from flask import Flask
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.sql import desc
@@ -15,14 +17,19 @@ from models import db
 from models import Addresses, AddressSummary, Blocks, BlockTXs, CoinbaseTxIn
 from models import TXs, LinkedTxOut, TxOut, LinkedTxOut, TXIn
 
-
 # This is a placeholder to indicate the transaction is empty
 EMPTY = ''
 EXPECTED_TABLES = {'addresses', 'address_summary', 'blocks', 'blocktxs', 'coinbase_txin', 'txs', 'linked_txout',
                    'txout', 'linked_txin', 'txin'}
 
+
 def create_app():
     first_run_app = Flask(__name__)
+    # setup RotatingFileHandler with maxBytes set to 25MB
+    rotating_log = RotatingFileHandler('explorer_first_run.log', maxBytes=25000000, backupCount=6)
+    first_run_app.logger.addHandler(rotating_log)
+    rotating_log.setFormatter(logging.Formatter(fmt='[%(asctime)s] / %(levelname)s in %(module)s: %(message)s'))
+    first_run_app.logger.setLevel(logging.INFO)
     first_run_app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     first_run_app.config['SQLALCHEMY_DATABASE_URI'] = database_uri
     db.init_app(first_run_app)
@@ -149,10 +156,10 @@ def lets_boogy(the_blocks):
 
 def detect_flask_config():
     if app_key == rb"""app_key""":
-        print("Go into config.py and change the app_key!")
+        first_run_app.logger.error("Go into config.py and change the app_key!")
         sys.exit()
     if csrf_key == "csrf_key":
-        print("Go into config.py and change the csrf_key!")
+        first_run_app.logger.error("Go into config.py and change the csrf_key!")
         sys.exit()
 
 
@@ -161,8 +168,8 @@ def detect_coin(cryptocurrency):
         genesis_hash = cryptocurrency.getblockhash(0)
     except JSONRPCException as e:
         if '401 Authorization Required' in str(e):
-            print("The rpcport is right but one or both these is wrong: rpcuser/rpcpassword.")
-            print("Go into config.py and fix this.")
+            first_run_app.logger.error("The rpcport is right but one or both these is wrong: rpcuser/rpcpassword.")
+            first_run_app.logger.error("Go into config.py and fix this.")
         sys.exit()
     else:
         if coin_name.capitalize() not in SUPPORTED_COINS:
@@ -171,21 +178,21 @@ def detect_coin(cryptocurrency):
                 try:
                     the_coin = getattr(blockchain, each)()
                     if the_coin.unique['genesis']['hash'] == genesis_hash:
-                        print(f'This coin was detected as: {each}')
-                        print(f'Please put "{each}" into config.py under `coin_name`')
+                        first_run_app.logger.info(f'This coin was detected as: {each}')
+                        first_run_app.logger.info(f'Please put "{each}" into config.py under `coin_name`')
                         coin_found = True
                         break
                 # TypeError needs caught in case someone tries non-strings for the coin_name... for whatever reason?
                 except(AttributeError, TypeError):
                     pass
             if not coin_found:
-                print("I wasn't able to auto-detect a coin/token.")
-                print("You're either trying something not supported or haven't followed the README for the project.")
+                first_run_app.logger.error("I wasn't able to auto-detect a coin/token.")
+                first_run_app.logger.error("You're either trying something not supported or haven't followed the README for the project.")
                 sys.exit()
         else:
             coin_name_in_config = coin_name.capitalize()
-            print(f"It looks like you already have `{coin_name_in_config}` set as the coin_name in config.py")
-            print("Skipping auto-detection of coin because of this")
+            first_run_app.logger.info(f"It looks like you already have `{coin_name_in_config}` set as the coin_name in config.py")
+            first_run_app.logger.info("Skipping auto-detection of coin because of this")
 
 def detect_tables():
     try:
@@ -201,16 +208,16 @@ def detect_tables():
             db.create_all()
         else:
             if len(extra_tables_detected) != 0:
-                print('There were extra tables detected:')
-                print(extra_tables_detected)
+                first_run_app.logger.error('There were extra tables detected:')
+                first_run_app.logger.error(extra_tables_detected)
                 sys.exit()
             elif len(valid_tables_missing) != 0:
-                print('These expected tables are missing:')
-                print(valid_tables_missing)
+                first_run_app.logger.error('These expected tables are missing:')
+                first_run_app.logger.error(valid_tables_missing)
                 sys.exit()
     except OperationalError as e:
         if 'password authentication failed' in str(e):
-            print('Incorrect password for SQLAlchemy. Go into config.py and fix this.')
+            first_run_app.logger.error('Incorrect password for SQLAlchemy. Go into config.py and fix this.')
             sys.exit()
 
 
@@ -223,7 +230,7 @@ if __name__ == '__main__':
     try:
         cryptocurrency = AuthServiceProxy(f"http://{rpcuser}:{rpcpassword}@127.0.0.1:{rpcport}")
     except(JSONRPCException, ValueError):
-        print("One or all of these is wrong: rpcuser/rpcpassword/rpcport. Go into config.py and fix this.")
+        first_run_app.logger.error("One or all of these is wrong: rpcuser/rpcpassword/rpcport. Fix this in config.py")
         sys.exit()
 
     if autodetect_coin:
@@ -240,8 +247,8 @@ if __name__ == '__main__':
         lets_boogy(the_blocks)
     except OperationalError as e:
         if 'database' in str(e) and 'does not exist' in str(e):
-            print("You'll need to follow the documentation to create the database.")
-            print("This isn't possible through Flask right now (issue \#15 in the Github repo).")
+            first_run_app.logger.info("You'll need to follow the documentation to create the database.")
+            first_run_app.logger.info("This isn't possible through Flask right now (issue \#15 in the Github repo).")
     else:
         while True:
             user_input = input('(C)ontinue, (D)rop all, or (E)xit?: ').lower()
@@ -256,5 +263,5 @@ if __name__ == '__main__':
             the_blocks = range(most_recent_stored_block + 1, most_recent_block + 1)
             lets_boogy(the_blocks)
         else:
-            print("Looks like you're all up-to-date")
+            first_run_app.logger.info("Looks like you're all up-to-date")
             sys.exit()
