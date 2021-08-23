@@ -50,7 +50,7 @@ def create_app(csrf):
         print("coin_name in config.py needs to be set.")
         sys.exit()
     try:
-        getattr(blockchain, prep_application.config['COIN_NAME'])()
+        coin_uniques = getattr(blockchain, prep_application.config['COIN_NAME'])().unique
     # TypeError needs caught in case someone tries non-strings for the coin_name... for whatever reason?
     except(AttributeError, TypeError):
         print("coin_name in config.py is not a supported coin.")
@@ -71,13 +71,12 @@ def create_app(csrf):
     prep_application.wsgi_app = ProxyFix(prep_application.wsgi_app, x_proto=1, x_host=1)
     db.init_app(prep_application)
     csrf.init_app(prep_application)
-    return prep_application
+    return prep_application, coin_uniques
 
 
 csrf = CSRFProtect()
-application = create_app(csrf)
+application, coin_uniques = create_app(csrf)
 application.app_context().push()
-coin_uniques = getattr(blockchain, application.config['COIN_NAME'])().unique
 
 
 @application.before_request
