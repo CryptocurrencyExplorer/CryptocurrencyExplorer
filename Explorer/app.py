@@ -58,15 +58,16 @@ def create_app(csrf):
     prep_application.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
     prep_application.config['MAX_CONTENT_LENGTH'] = 256
     prep_application.config['PROGRAM_NAME'] = program_name
+    #prep_application.config['REMEMBER_COOKIE_HTTPONLY'] = True
+    #prep_application.config['SESSION_COOKIE_HTTPONLY'] = True
     prep_application.config['SESSION_COOKIE_NAME'] = 'csrf_token'
+    #prep_application.config['SESSION_COOKIE_SECURE'] = True
     prep_application.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     prep_application.config['SQLALCHEMY_DATABASE_URI'] = database_uri
     prep_application.config['VERSION'] = 0.7
     prep_application.config['WTF_CSRF_SECRET_KEY'] = csrf_key
     prep_application.jinja_env.trim_blocks = True
     prep_application.jinja_env.lstrip_blocks = True
-    # Set this when using HTTPS
-    # app.config['SESSION_COOKIE_SECURE'] = True
     prep_application.wsgi_app = ProxyFix(prep_application.wsgi_app, x_proto=1, x_host=1)
     db.init_app(prep_application)
     csrf.init_app(prep_application)
