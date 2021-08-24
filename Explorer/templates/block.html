@@ -35,8 +35,8 @@
             </p>
             <h3>Transactions</h3>
             <table class="table"><tr><th>Transaction</th><th>Fee</th><th>From (amount)</th><th>To (amount)</th></tr>
-                {% for each in range(0, total_transactions) %}
-                <tr><td><a href="../tx/TRANSACTION_HASH">FIRST TEN OF TRANSACTION HASH...</a></td><td>TODO</td><td>TODO</td><td><a href="../address/ADDRESS">ADDRESS</a>: TODO<br /></td></tr>
+                {% for each in the_transactions %}
+                <tr><td><a href="/tx/{{ each.tx_id }}">{{ each.tx_id[0:10] }}...</a></td><td>TODO</td><td>TODO</td><td><a href="../address/ADDRESS">ADDRESS</a>: TODO<br /></td></tr>
                 {% endfor %}
             </table>
 {% endblock %}

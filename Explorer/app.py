@@ -242,7 +242,6 @@ def block(block_hash_or_height):
             cumulative_difficulty = the_block.cumulative_difficulty
             nonce = the_block.nonce
             transactions = db.session.query(BlockTXs).filter_by(block_height=the_block_height).all()
-            how_many_transactions = len(transactions)
             value_out = the_block.value_out
             # TODO
             transaction_fees = 'PLACEHOLDER'
@@ -261,7 +260,6 @@ def block(block_hash_or_height):
                                    cumulative_difficulty=cumulative_difficulty,
                                    nonce=nonce,
                                    the_transactions=transactions,
-                                   total_transactions=how_many_transactions,
                                    value_out=value_out,
                                    transaction_fees=transaction_fees,
                                    # TODO
