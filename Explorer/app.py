@@ -8,8 +8,8 @@ import sys
 from decimal import Decimal
 from logging.handlers import RotatingFileHandler
 from bitcoinrpc.authproxy import AuthServiceProxy, JSONRPCException
-from flask import Flask, jsonify, make_response, redirect
-from flask import request, url_for, render_template, session
+from flask import Flask, jsonify, make_response, send_from_directory
+from flask import redirect, request, url_for, render_template, session
 from flask.json import JSONEncoder
 from flask_wtf import FlaskForm
 from flask_wtf.csrf import CSRFError, CSRFProtect
@@ -22,7 +22,7 @@ from config import coin_name, rpcpassword, rpcport, rpcuser
 from config import app_key, csrf_key, database_uri, program_name
 from helpers import average_age, format_time
 from models import db
-from models import Blocks, BlockTXs
+from models import Blocks, BlockTXs, CoinbaseTxIn, TXIn
 
 
 class DecimalEncoder(JSONEncoder):
@@ -115,6 +115,11 @@ def payload_too_large():
 def uri_too_large():
     error = f'URI too large'
     return render_template("404.html", error=error), 414
+
+
+@application.route('/robots.txt')
+def robots():
+    return send_from_directory(application.static_folder, 'robots.txt')
 
 
 class SearchForm(FlaskForm):
@@ -281,11 +286,16 @@ def tx(transaction):
     # Though, in order to finish this, addresses need done first
     check_transaction = db.session.query(BlockTXs).filter_by(tx_id=transaction.lower()).first()
     if check_transaction is not None:
-        return make_response(jsonify({'message': 'valid',
-                                      'error': 'todo'}), 200)
+        coinbase_txin = db.session.query(CoinbaseTxIn).filter_by(block_height=check_transaction.block_height).first()
+        txin = db.session.query(TXIn).filter_by(tx_id=transaction.lower()).all()
+        if txin is not None:
+            return render_template('transaction.html',
+                                   inputs=txin,
+                                   coinbase_input=coinbase_txin)
+        else:
+            return render_template('404.html', error="Not a valid transaction"), 404
     else:
-        return make_response(jsonify({'message': 'invalid',
-                                      'error': 'todo'}), 200)
+        return render_template('404.html', error="Not a valid transaction"), 404
 
 
 @application.get("/api/")
