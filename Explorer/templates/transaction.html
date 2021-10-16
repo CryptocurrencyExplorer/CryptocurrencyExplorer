@@ -15,52 +15,52 @@
 {% endblock %}
 
 {% block additional_body %}
-        <p>
-            Hash: TRANSACTION HASH<br />
-            Appeared in <a href="/block/BLOCK_NUMBER">BLOCK NUMBER</a> (TIME)<br />
-            Number of inputs: {% if inputs|length >= 1 %}{{ inputs|length }}{% endif %} (<a href="#inputs">Jump to inputs</a>)<br />
-            Total in: <br />
-            Number of outputs: 1 (<a href="#outputs">Jump to outputs</a>)<br />
-            Total out: TODO<br />
-            Size: TODO<br />
-            Fee: TODO<br />
-        </p>
-        <a id="inputs"><h3>Inputs</h3></a>
-        <table class="table">
-            <tr><th>Index</th><th>Previous output</th><th>Amount</th><th>From address</th><th>ScriptSig</th></tr>
-            {% if inputs|length >= 1 %}
-            {% for vin in inputs %}
-            <tr>
-                <td><a id="i{{ loop.index0 }}">{{ loop.index0 }}</a></td>
-                <td>TODO</td>
-                <td>TODO</td>
-                <td>TODO</td>
-                <td>TODO</td>
-            </tr>
-           {% endfor %}
-           {% else %}
-            <tr>
-                <td><a id="i{{ loop.index0 }}">{{ loop.index0 }}</a></td>
-                <td>TODO</td>
-                <td>TODO</td>
-                <td>TODO</td>
-                <td>TODO</td>
-            </tr>
-           {% endif %}
-        </table>
-        <a id="outputs"><h3>Outputs</h3></a>
-        <table class="table">
-            <tr><th>Index</th><th>Redeemed at input</th><th>Amount</th><th>To address</th><th>ScriptPubKey</th></tr>
-            {% for vout in outputs %}
-            <tr>
-                <td><a id="o{{ vin.n }}">{{ vin.n }}</a></td>
-                <td><a href="">TODO</a></td>
-                <td>TODO</td>
-                <td><a href="">TODO</a></td>
-                <td>TODO</td>
-            </tr>
-            {% endfor %}
-        </table>
+           <p>
+                Hash: TRANSACTION HASH<br />
+                Appeared in <a href="/block/BLOCK_NUMBER">BLOCK NUMBER</a> (TIME)<br />
+                Number of inputs: {% if inputs|length >= 1 %}{{ inputs|length }}{% endif %} (<a href="#inputs">Jump to inputs</a>)<br />
+                Total in: <br />
+                Number of outputs: 1 (<a href="#outputs">Jump to outputs</a>)<br />
+                Total out: TODO<br />
+                Size: TODO<br />
+                Fee: TODO<br />
+            </p>
+            <a id="inputs"><h3>Inputs</h3></a>
+            <table class="table">
+                <tr><th>Index</th><th>Previous output</th><th>Amount</th><th>From address</th><th>ScriptSig</th></tr>
+                {% if inputs|length >= 1 %}
+                {% for vin in inputs %}
+                <tr>
+                    <td><a id="i{{ loop.index0 }}">{{ loop.index0 }}</a></td>
+                    <td>TODO</td>
+                    <td>TODO</td>
+                    <td>TODO</td>
+                    <td>TODO</td>
+                </tr>
+               {% endfor %}
+               {% else %}
+                <tr>
+                    <td><a id="i{{ loop.index0 }}">{{ loop.index0 }}</a></td>
+                    <td>TODO</td>
+                    <td>TODO</td>
+                    <td>TODO</td>
+                    <td>TODO</td>
+                </tr>
+               {% endif %}
+            </table>
+            <a id="outputs"><h3>Outputs</h3></a>
+            <table class="table">
+                <tr><th>Index</th><th>Redeemed at input</th><th>Amount</th><th>To address</th><th>ScriptPubKey</th></tr>
+                {% for vout in outputs %}
+                    <tr>
+                    <td><a id="o{{ vin.n }}">{{ vin.n }}</a></td>
+                    <td><a href="">TODO</a></td>
+                    <td>TODO</td>
+                    <td><a href="">TODO</a></td>
+                    <td>TODO</td>
+                </tr>
+                {% endfor %}
+            </table>
 {% endblock %}
 
 {% block footer %}{{ super() }}{% endblock %}
