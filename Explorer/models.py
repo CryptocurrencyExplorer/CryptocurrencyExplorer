@@ -96,6 +96,8 @@ class Blocks(db.Model):
 
 class BlockTXs(db.Model):
     __tablename__ = 'blocktxs'
+    id = db.Column(db.Integer,
+                   primary_key=True)
     block_height = db.Column(db.Integer,
                              nullable=False)
     n = db.Column(db.Integer,
@@ -121,7 +123,8 @@ class TXIn(db.Model):
     id = db.Column(db.Integer,
                    primary_key=True)
     block_height = db.Column(db.Integer,
-                             primary_key=True)
+                             unique=False,
+                             nullable=False)
     tx_id = db.Column(db.String,
                       unique=False,
                       nullable=False)
@@ -137,13 +140,10 @@ class TXIn(db.Model):
     witness = db.Column(db.String,
                         unique=False,
                         nullable=True)
-    scriptsig = db.Column(db.String,
-                          unique=False,
-                          nullable=False)
-    coinbase = db.Column(db.String,
+    coinbase = db.Column(db.Boolean,
                          unique=False,
                          nullable=True)
-    spent = db.Column(db.String,
+    spent = db.Column(db.Boolean,
                       unique=False,
                       nullable=True)
     prevout_hash = db.Column(db.String,
@@ -172,10 +172,10 @@ class TxOut(db.Model):
                         nullable=False)
     linked_tx_id = db.Column(db.String,
                              unique=False,
-                             nullable=False)
+                             nullable=True)
     this_tx_id = db.Column(db.String,
                            unique=False,
-                           nullable=False)
-    spent = db.Column(db.String,
+                           nullable=True)
+    spent = db.Column(db.Boolean,
                       unique=False,
                       nullable=False)

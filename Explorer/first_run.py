@@ -14,26 +14,26 @@ from config import autodetect_coin, autodetect_config, autodetect_rpc, autodetec
 from config import coin_name, rpcpassword, rpcport, rpcuser
 from config import app_key, csrf_key, database_uri
 from models import db
-from models import Addresses, AddressSummary, Blocks, BlockTXs, CoinbaseTxIn
-from models import TXs, LinkedTxOut, TxOut, LinkedTxOut, TXIn
+from models import Addresses, AddressSummary, Blocks, BlockTXs
+from models import TXs, TxOut, TXIn
 
 # This is a placeholder to indicate the transaction is empty
 EMPTY = ''
-EXPECTED_TABLES = {'addresses', 'address_summary', 'blocks', 'blocktxs', 'coinbase_txin', 'txs', 'linked_txout',
-                   'txout', 'linked_txin', 'txin'}
+EXPECTED_TABLES = {'addresses', 'address_summary', 'blocks', 'blocktxs', 'txs',
+                   'txout', 'txin'}
 
 
 def create_app():
-    first_run_app = Flask(__name__)
+    first_run = Flask(__name__)
     # setup RotatingFileHandler with maxBytes set to 25MB
     rotating_log = RotatingFileHandler('explorer_first_run.log', maxBytes=25000000, backupCount=6)
-    first_run_app.logger.addHandler(rotating_log)
+    first_run.logger.addHandler(rotating_log)
     rotating_log.setFormatter(logging.Formatter(fmt='[%(asctime)s] / %(levelname)s in %(module)s: %(message)s'))
-    first_run_app.logger.setLevel(logging.INFO)
-    first_run_app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    first_run_app.config['SQLALCHEMY_DATABASE_URI'] = database_uri
-    db.init_app(first_run_app)
-    return first_run_app
+    first_run.logger.setLevel(logging.INFO)
+    first_run.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    first_run.config['SQLALCHEMY_DATABASE_URI'] = database_uri
+    db.init_app(first_run)
+    return first_run
 
 
 def process_block(item):
@@ -41,7 +41,7 @@ def process_block(item):
         return f'Processing block {item} / {the_blocks[-1]}'
 
 
-def lets_boogy(the_blocks):
+def lets_boogy(the_blocks, detected_coin):
     if the_blocks[0] == 0:
         total_cumulative_difficulty = decimal.Decimal(0.0)
     else:
@@ -95,23 +95,40 @@ def lets_boogy(the_blocks):
                         commit_transaction_out = TxOut(n=vout['n'],
                                                        value=vout['value'],
                                                        scriptpubkey='test',
-                                                       address=vout['scriptPubKey']['addresses'][0])
+                                                       address=vout['scriptPubKey']['addresses'][0],
+                                                       linked_tx_id=None,
+                                                       this_tx_id=None,
+                                                       spent=False)
                         db.session.add(commit_transaction_out)
 
                     for vin in raw_block_tx['vin']:
                         if number == 0:
-                            commit_coinbase = CoinbaseTxIn(block_height=the_block['height'],
-                                                           scriptsig=vin['coinbase'],
-                                                           sequence=vin['sequence'])
+                            commit_coinbase = TXIn(block_height=block_height,
+                                                   tx_id=this_transaction,
+                                                   n=number,
+                                                   scriptsig='test',
+                                                   sequence=0,
+                                                   # TODO - This needs pulled from bootstrap
+                                                   # TODO - Witness actually needs supported
+                                                   witness=None,
+                                                   coinbase=True,
+                                                   spent=False,
+                                                   prevout_hash='test',
+                                                   prevout_n=0)
                             db.session.add(commit_coinbase)
                         else:
-                            commit_transaction_in = TXIn(tx_id=this_transaction,
+                            commit_transaction_in = TXIn(block_height=block_height,
+                                                         tx_id=this_transaction,
                                                          n=number,
                                                          scriptsig='test',
                                                          sequence=0,
                                                          # TODO - This needs pulled from bootstrap
                                                          # TODO - Witness actually needs supported
-                                                         witness=None)
+                                                         witness=None,
+                                                         coinbase=False,
+                                                         spent=False,
+                                                         prevout_hash='test',
+                                                         prevout_n=0)
                             db.session.add(commit_transaction_in)
                             # if 'vout' in vin and 'txid' in vin:
                                 # If this transaction is referenced, this should never be invalid.
@@ -126,7 +143,7 @@ def lets_boogy(the_blocks):
                                                              # TODO - Witness actually needs supported
                                                              # witness=None)
             if block_height == 0:
-                prev_block_hash = '0000000000000000000000000000000000000000000000000000000000000000'
+                prev_block_hash = detected_coin['genesis']['prev_hash']
                 next_block_hash = the_block['nextblockhash']
             elif block_height != the_blocks[-1]:
                 prev_block_hash = the_block['previousblockhash']
@@ -173,26 +190,27 @@ def detect_coin(cryptocurrency):
         sys.exit()
     else:
         if coin_name.capitalize() not in SUPPORTED_COINS:
-            coin_found = False
             for each in SUPPORTED_COINS:
                 try:
                     the_coin = getattr(blockchain, each)()
-                    if the_coin.unique['genesis']['hash'] == genesis_hash:
-                        first_run_app.logger.info(f'This coin was detected as: {each}')
-                        first_run_app.logger.info(f'Please put "{each}" into config.py under `coin_name`')
-                        coin_found = True
-                        break
                 # TypeError needs caught in case someone tries non-strings for the coin_name... for whatever reason?
                 except(AttributeError, TypeError):
                     pass
-            if not coin_found:
-                first_run_app.logger.error("I wasn't able to auto-detect a coin/token.")
-                first_run_app.logger.error("You're either trying something not supported or haven't followed the README for the project.")
-                sys.exit()
+                else:
+                    if the_coin.unique['genesis']['hash'] == genesis_hash:
+                        first_run_app.logger.info(f'This coin was detected as: {each}')
+                        first_run_app.logger.info(f'Please put "{each}" into config.py under `coin_name`')
+                        return the_coin.unique
+            first_run_app.logger.error("I wasn't able to auto-detect a coin/token.")
+            first_run_app.logger.error("You're either trying something not supported or haven't followed the README for the project.")
+            sys.exit()
         else:
             coin_name_in_config = coin_name.capitalize()
             first_run_app.logger.info(f"It looks like you already have `{coin_name_in_config}` set as the coin_name in config.py")
             first_run_app.logger.info("Skipping auto-detection of coin because of this")
+            the_coin = getattr(blockchain, coin_name_in_config)()
+            return the_coin.unique
+
 
 def detect_tables():
     try:
@@ -234,7 +252,7 @@ if __name__ == '__main__':
         sys.exit()
 
     if autodetect_coin:
-        detect_coin(cryptocurrency)
+        detected_coin = detect_coin(cryptocurrency)
     if autodetect_tables:
         detect_tables()
 
@@ -244,7 +262,7 @@ if __name__ == '__main__':
         most_recent_stored_block = db.session.query(Blocks).order_by(desc('height')).first().height
     except AttributeError:
         the_blocks = range(0, most_recent_block + 1)
-        lets_boogy(the_blocks)
+        lets_boogy(the_blocks, detected_coin)
     except OperationalError as e:
         if 'database' in str(e) and 'does not exist' in str(e):
             first_run_app.logger.info("You'll need to follow the documentation to create the database.")
@@ -252,16 +270,18 @@ if __name__ == '__main__':
     else:
         while True:
             user_input = input('(C)ontinue, (D)rop all, or (E)xit?: ').lower()
-            if user_input == 'd':
+            if user_input in ['d', 'drop', 'drop all']:
                 db.drop_all()
                 break
-            elif user_input == 'c':
+            elif user_input in ['c', 'continue']:
                 break
-            elif user_input == 'e':
+            elif user_input in ['e', 'exit']:
                 sys.exit()
+            else:
+                print('Can you try that again?')
         if most_recent_stored_block != most_recent_block:
             the_blocks = range(most_recent_stored_block + 1, most_recent_block + 1)
-            lets_boogy(the_blocks)
+            lets_boogy(the_blocks, detected_coin)
         else:
             first_run_app.logger.info("Looks like you're all up-to-date")
             sys.exit()
