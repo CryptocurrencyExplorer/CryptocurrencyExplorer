@@ -5,16 +5,14 @@ from bitcoinrpc.authproxy import AuthServiceProxy, JSONRPCException
 from flask import Flask
 from logging.handlers import RotatingFileHandler
 from sqlalchemy.sql import desc
-from config import rpcpassword, rpcport, rpcuser
+import blockchain
+from config import coin_name, rpcpassword, rpcport, rpcuser
 from config import database_uri
-from models import db
-from models import Addresses, AddressSummary, Blocks, BlockTXs, CoinbaseTxIn
-from models import TXs, LinkedTxOut, TxOut, LinkedTxOut, TXIn
+from models import db, Addresses, AddressSummary, Blocks, TXs, TxOut, TXIn
 
 # This is a placeholder to indicate the transaction is empty
 EMPTY = ''
-EXPECTED_TABLES = {'addresses', 'address_summary', 'blocks', 'blocktxs', 'coinbase_txin', 'txs', 'linked_txout',
-                   'txout', 'linked_txin', 'txin'}
+EXPECTED_TABLES = {'addresses', 'address_summary', 'blocks', 'txs', 'txout', 'txin'}
 
 
 def create_app():
@@ -56,12 +54,14 @@ def lets_boogy(the_blocks):
         # If there's more than one transaction, we need to calculate fees.
         # Since this involves inputs - outputs, the coinbase is done last.
         for number, this_transaction in enumerate(raw_block_transactions):
+            the_version = this_transaction['version']
             # "The tx_id column is the transaction to which this output belongs,
             # n is the position within the output list."
             # https://grisha.org/blog/2017/12/15/blockchain-and-postgres/
-            this_tx = BlockTXs(block_height=block_height,
-                               n=number,
-                               tx_id=this_transaction)
+            this_tx = TXs(block_height=block_height,
+                          n=number,
+                          version=the_version,
+                          tx_id=this_transaction)
             db.session.add(this_tx)
             try:
                 raw_block_tx = cryptocurrency.getrawtransaction(this_transaction, 1)
@@ -70,7 +70,9 @@ def lets_boogy(the_blocks):
                 # if 'No information available about transaction' in str(e):
                 # TODO - Add something to indicate this transaction is unavailable
             else:
-                the_tx = TXs(txid=raw_block_tx['txid'],
+                the_tx = TXs(txid=this_transaction,
+                             block_height=block_height,
+                             n=number,
                              version=raw_block_tx['version'],
                              locktime=raw_block_tx['locktime'])
                 db.session.add(the_tx)
@@ -82,27 +84,52 @@ def lets_boogy(the_blocks):
 
                 for vout in raw_block_tx['vout']:
                     total_value_out += vout['value']
-                    commit_transaction_out = TxOut(n=vout['n'],
+                    commit_transaction_out = TxOut(txid=this_transaction,
+                                                   n=vout['n'],
                                                    value=vout['value'],
-                                                   scriptpubkey='test',
-                                                   address=vout['scriptPubKey']['addresses'][0])
+                                                   scriptpubkey=vout['scriptPubKey']['hex'],
+                                                   address=vout['scriptPubKey']['addresses'][0],
+                                                   # TODO - This actually needs done if spent
+                                                   linked_tx_id=None,
+                                                   # TODO - This actually needs done if spent
+                                                   spent=False)
                     db.session.add(commit_transaction_out)
 
                 for vin in raw_block_tx['vin']:
+                    # If this is the first transaction, it's the coinbase/miner reward - always.
                     if number == 0:
-                        commit_coinbase = CoinbaseTxIn(block_height=the_block['height'],
-                                                       scriptsig=vin['coinbase'],
-                                                       sequence=vin['sequence'])
+                        commit_coinbase = TXIn(block_height=the_block['height'],
+                                               txid=this_transaction,
+                                               n=number,
+                                               scriptsig=vin['coinbase'],
+                                               sequence=vin['sequence'],
+                                               # TODO - This needs pulled from bootstrap
+                                               # TODO - Witness actually needs supported
+                                               witness=None,
+                                               coinbase=True,
+                                               spent=False,
+                                               # TODO - This actually needs done if spent
+                                               prevout_hash='test',
+                                               # TODO - This actually needs done if spent
+                                               prevout_n=0)
                         db.session.add(commit_coinbase)
                     else:
-                        commit_transaction_in = TXIn(tx_id=this_transaction,
+                        commit_transaction_in = TXIn(block_height=the_block['height'],
+                                                     txid=this_transaction,
                                                      n=number,
-                                                     scriptsig='test',
-                                                     sequence=0,
+                                                     scriptsig=vin['scriptSig']['hex'],
+                                                     sequence=vin['sequence'],
                                                      # TODO - This needs pulled from bootstrap
                                                      # TODO - Witness actually needs supported
-                                                     witness=None)
+                                                     witness=None,
+                                                     coinbase=False,
+                                                     spent=False,
+                                                     # TODO - This actually needs done if spent
+                                                     prevout_hash='test',
+                                                     # TODO - This actually needs done if spent
+                                                     prevout_n=0)
                         db.session.add(commit_transaction_in)
+                        # TODO - This needs to be approached more intelligently
                         # if 'vout' in vin and 'txid' in vin:
                             # If this transaction is referenced, this should never be invalid.
                             # Not sure if that's even possible.
@@ -116,7 +143,7 @@ def lets_boogy(the_blocks):
                                                          # TODO - Witness actually needs supported
                                                          # witness=None)
             if block_height == 0:
-                prev_block_hash='0000000000000000000000000000000000000000000000000000000000000000'
+                prev_block_hash = uniques['genesis']['prev_hash']
                 next_block_hash = the_block['nextblockhash']
             elif block_height != the_blocks[-1]:
                 prev_block_hash = the_block['previousblockhash']
@@ -155,8 +182,12 @@ if __name__ == '__main__':
 
     most_recent_stored_block = db.session.query(Blocks).order_by(desc('height')).first().height
 
+    coin_name_in_config = coin_name.capitalize()
+    the_coin = getattr(blockchain, coin_name_in_config)()
+    uniques = the_coin.unique
+
     if most_recent_stored_block != most_recent_block:
         the_blocks = range(most_recent_stored_block + 1, most_recent_block + 1)
-        lets_boogy(the_blocks)
+        lets_boogy(the_blocks, uniques)
     else:
         sys.exit()

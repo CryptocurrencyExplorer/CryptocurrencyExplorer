@@ -14,13 +14,11 @@ from config import autodetect_coin, autodetect_config, autodetect_rpc, autodetec
 from config import coin_name, rpcpassword, rpcport, rpcuser
 from config import app_key, csrf_key, database_uri
 from models import db
-from models import Addresses, AddressSummary, Blocks, BlockTXs
-from models import TXs, TxOut, TXIn
+from models import Addresses, AddressSummary, Blocks, TXIn, TXs, TxOut
 
 # This is a placeholder to indicate the transaction is empty
 EMPTY = ''
-EXPECTED_TABLES = {'addresses', 'address_summary', 'blocks', 'blocktxs', 'txs',
-                   'txout', 'txin'}
+EXPECTED_TABLES = {'addresses', 'address_summary', 'blocks', 'txs', 'txout', 'txin'}
 
 
 def create_app():
@@ -41,7 +39,7 @@ def process_block(item):
         return f'Processing block {item} / {the_blocks[-1]}'
 
 
-def lets_boogy(the_blocks, detected_coin):
+def lets_boogy(the_blocks, uniques):
     if the_blocks[0] == 0:
         total_cumulative_difficulty = decimal.Decimal(0.0)
     else:
@@ -71,10 +69,6 @@ def lets_boogy(the_blocks, detected_coin):
                 # "The tx_id column is the transaction to which this output belongs,
                 # n is the position within the output list."
                 # https://grisha.org/blog/2017/12/15/blockchain-and-postgres/
-                this_tx = BlockTXs(block_height=block_height,
-                                   n=number,
-                                   tx_id=this_transaction)
-                db.session.add(this_tx)
                 try:
                     raw_block_tx = cryptocurrency.getrawtransaction(this_transaction, 1)
                 except JSONRPCException as e:
@@ -82,7 +76,9 @@ def lets_boogy(the_blocks, detected_coin):
                     # if 'No information available about transaction' in str(e):
                     # TODO - Add something to indicate this transaction is unavailable
                 else:
-                    the_tx = TXs(txid=raw_block_tx['txid'],
+                    the_tx = TXs(txid=this_transaction,
+                                 block_height=block_height,
+                                 n=number,
                                  version=raw_block_tx['version'],
                                  locktime=raw_block_tx['locktime'])
                     db.session.add(the_tx)
@@ -92,19 +88,19 @@ def lets_boogy(the_blocks, detected_coin):
 
                     for vout in raw_block_tx['vout']:
                         total_value_out += vout['value']
-                        commit_transaction_out = TxOut(n=vout['n'],
+                        commit_transaction_out = TxOut(txid=this_transaction,
+                                                       n=vout['n'],
                                                        value=vout['value'],
-                                                       scriptpubkey='test',
+                                                       scriptpubkey=vout['scriptPubKey']['hex'],
                                                        address=vout['scriptPubKey']['addresses'][0],
-                                                       linked_tx_id=None,
-                                                       this_tx_id=None,
+                                                       linked_txid=None,
                                                        spent=False)
                         db.session.add(commit_transaction_out)
 
                     for vin in raw_block_tx['vin']:
                         if number == 0:
                             commit_coinbase = TXIn(block_height=block_height,
-                                                   tx_id=this_transaction,
+                                                   txid=this_transaction,
                                                    n=number,
                                                    scriptsig='test',
                                                    sequence=0,
@@ -118,7 +114,7 @@ def lets_boogy(the_blocks, detected_coin):
                             db.session.add(commit_coinbase)
                         else:
                             commit_transaction_in = TXIn(block_height=block_height,
-                                                         tx_id=this_transaction,
+                                                         txid=this_transaction,
                                                          n=number,
                                                          scriptsig='test',
                                                          sequence=0,
@@ -143,7 +139,7 @@ def lets_boogy(the_blocks, detected_coin):
                                                              # TODO - Witness actually needs supported
                                                              # witness=None)
             if block_height == 0:
-                prev_block_hash = detected_coin['genesis']['prev_hash']
+                prev_block_hash = uniques['genesis']['prev_hash']
                 next_block_hash = the_block['nextblockhash']
             elif block_height != the_blocks[-1]:
                 prev_block_hash = the_block['previousblockhash']
@@ -201,12 +197,16 @@ def detect_coin(cryptocurrency):
                         first_run_app.logger.info(f'This coin was detected as: {each}')
                         first_run_app.logger.info(f'Please put "{each}" into config.py under `coin_name`')
                         return the_coin.unique
+            # No reason to put an else above,
+            # since this'll catch if nothing can be detected in the for loop
             first_run_app.logger.error("I wasn't able to auto-detect a coin/token.")
-            first_run_app.logger.error("You're either trying something not supported or haven't followed the README for the project.")
+            first_run_app.logger.error("Are you using an unsupported coin/token?")
+            first_run_app.logger.error("No? Then check out the README:")
+            first_run_app.logger.error("https://github.com/CryptocurrencyExplorer/CryptocurrencyExplorer")
             sys.exit()
         else:
             coin_name_in_config = coin_name.capitalize()
-            first_run_app.logger.info(f"It looks like you already have `{coin_name_in_config}` set as the coin_name in config.py")
+            first_run_app.logger.info(f"You already have `{coin_name_in_config}` set as the coin_name in config.py")
             first_run_app.logger.info("Skipping auto-detection of coin because of this")
             the_coin = getattr(blockchain, coin_name_in_config)()
             return the_coin.unique
@@ -252,7 +252,7 @@ if __name__ == '__main__':
         sys.exit()
 
     if autodetect_coin:
-        detected_coin = detect_coin(cryptocurrency)
+        uniques = detect_coin(cryptocurrency)
     if autodetect_tables:
         detect_tables()
 
@@ -262,9 +262,9 @@ if __name__ == '__main__':
         most_recent_stored_block = db.session.query(Blocks).order_by(desc('height')).first().height
     except AttributeError:
         the_blocks = range(0, most_recent_block + 1)
-        lets_boogy(the_blocks, detected_coin)
-    except OperationalError as e:
-        if 'database' in str(e) and 'does not exist' in str(e):
+        lets_boogy(the_blocks, uniques)
+    except OperationalError as exception:
+        if 'database' in str(exception) and 'does not exist' in str(exception):
             first_run_app.logger.info("You'll need to follow the documentation to create the database.")
             first_run_app.logger.info("This isn't possible through Flask right now (issue \#15 in the Github repo).")
     else:
@@ -281,7 +281,7 @@ if __name__ == '__main__':
                 print('Can you try that again?')
         if most_recent_stored_block != most_recent_block:
             the_blocks = range(most_recent_stored_block + 1, most_recent_block + 1)
-            lets_boogy(the_blocks, detected_coin)
+            lets_boogy(the_blocks, uniques)
         else:
             first_run_app.logger.info("Looks like you're all up-to-date")
             sys.exit()

@@ -94,22 +94,33 @@ class Blocks(db.Model):
                                  nullable=False)
 
 
-class BlockTXs(db.Model):
-    __tablename__ = 'blocktxs'
-    id = db.Column(db.Integer,
-                   primary_key=True)
-    block_height = db.Column(db.Integer,
-                             nullable=False)
-    n = db.Column(db.Integer,
-                  nullable=False)
-    tx_id = db.Column(db.String,
-                      nullable=False)
+# This IS used, but everything is already in TXs.
+# So this is just duplication of effort here.
+#class BlockTXs(db.Model):
+#    __tablename__ = 'blocktxs'
+#    id = db.Column(db.Integer,
+#                   primary_key=True)
+#    block_height = db.Column(db.Integer,
+#                             nullable=False)
+#    n = db.Column(db.Integer,
+#                  nullable=False)
+#    txid = db.Column(db.String,
+#                     nullable=False)
 
 
 class TXs(db.Model):
     __tablename__ = 'txs'
+    id = db.Column(db.Integer,
+                   primary_key=True)
     txid = db.Column(db.String,
-                     primary_key=True)
+                     unique=False,
+                     nullable=False)
+    block_height = db.Column(db.Integer,
+                             unique=False,
+                             nullable=False)
+    n = db.Column(db.Integer,
+                  nullable=False,
+                  unique=False)
     version = db.Column(db.Integer,
                         unique=False,
                         nullable=False)
@@ -125,9 +136,9 @@ class TXIn(db.Model):
     block_height = db.Column(db.Integer,
                              unique=False,
                              nullable=False)
-    tx_id = db.Column(db.String,
-                      unique=False,
-                      nullable=False)
+    txid = db.Column(db.String,
+                     unique=False,
+                     nullable=False)
     n = db.Column(db.Integer,
                   unique=False,
                   nullable=False)
@@ -158,6 +169,9 @@ class TxOut(db.Model):
     __tablename__ = 'txout'
     id = db.Column(db.Integer,
                    primary_key=True)
+    txid = db.Column(db.String,
+                     unique=False,
+                     nullable=False)
     n = db.Column(db.Integer,
                   unique=False,
                   nullable=False)
@@ -170,12 +184,9 @@ class TxOut(db.Model):
     address = db.Column(db.String,
                         unique=False,
                         nullable=False)
-    linked_tx_id = db.Column(db.String,
-                             unique=False,
-                             nullable=True)
-    this_tx_id = db.Column(db.String,
-                           unique=False,
-                           nullable=True)
+    linked_txid = db.Column(db.String,
+                            unique=False,
+                            nullable=True)
     spent = db.Column(db.Boolean,
                       unique=False,
                       nullable=False)

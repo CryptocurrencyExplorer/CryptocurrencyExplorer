@@ -21,8 +21,7 @@ import blockchain
 from config import coin_name, rpcpassword, rpcport, rpcuser
 from config import app_key, csrf_key, database_uri, program_name
 from helpers import average_age, format_time
-from models import db
-from models import Blocks, BlockTXs, CoinbaseTxIn, TXIn
+from models import db, Blocks, TXs, TXIn
 
 
 class DecimalEncoder(JSONEncoder):
@@ -246,7 +245,7 @@ def block(block_hash_or_height):
             bits = the_block.bits
             cumulative_difficulty = the_block.cumulative_difficulty
             nonce = the_block.nonce
-            transactions = db.session.query(BlockTXs).filter_by(block_height=the_block_height).all()
+            transactions = db.session.query(TXs).filter_by(block_height=the_block_height).all()
             value_out = the_block.value_out
             # TODO
             transaction_fees = 'PLACEHOLDER'
@@ -284,14 +283,12 @@ def redirect_to_tx():
 def tx(transaction):
     # TODO - Transactions actually need done
     # Though, in order to finish this, addresses need done first
-    check_transaction = db.session.query(BlockTXs).filter_by(tx_id=transaction.lower()).first()
+    check_transaction = db.session.query(TXs).filter_by(txid=transaction.lower()).first()
     if check_transaction is not None:
-        coinbase_txin = db.session.query(CoinbaseTxIn).filter_by(block_height=check_transaction.block_height).first()
-        txin = db.session.query(TXIn).filter_by(tx_id=transaction.lower()).all()
+        txin = db.session.query(TXIn).filter_by(txid=transaction.lower()).all()
         if txin is not None:
             return render_template('transaction.html',
-                                   inputs=txin,
-                                   coinbase_input=coinbase_txin)
+                                   inputs=txin)
         else:
             return render_template('404.html', error="Not a valid transaction"), 404
     else:
