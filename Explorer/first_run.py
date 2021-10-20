@@ -91,7 +91,7 @@ def lets_boogy(the_blocks, uniques):
                         commit_transaction_out = TxOut(txid=this_transaction,
                                                        n=vout['n'],
                                                        value=vout['value'],
-                                                       scriptpubkey=vout['scriptPubKey']['hex'],
+                                                       scriptpubkey=vout['scriptPubKey']['asm'],
                                                        address=vout['scriptPubKey']['addresses'][0],
                                                        linked_txid=None,
                                                        spent=False)
@@ -102,8 +102,8 @@ def lets_boogy(the_blocks, uniques):
                             commit_coinbase = TXIn(block_height=block_height,
                                                    txid=this_transaction,
                                                    n=number,
-                                                   scriptsig='test',
-                                                   sequence=0,
+                                                   scriptsig=vin['scriptSig']['asm'],
+                                                   sequence=vin['sequence'],
                                                    # TODO - This needs pulled from bootstrap
                                                    # TODO - Witness actually needs supported
                                                    witness=None,
@@ -116,8 +116,8 @@ def lets_boogy(the_blocks, uniques):
                             commit_transaction_in = TXIn(block_height=block_height,
                                                          txid=this_transaction,
                                                          n=number,
-                                                         scriptsig='test',
-                                                         sequence=0,
+                                                         scriptsig=vin['scriptSig']['asm'],
+                                                         sequence=vin['sequence'],
                                                          # TODO - This needs pulled from bootstrap
                                                          # TODO - Witness actually needs supported
                                                          witness=None,

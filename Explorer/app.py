@@ -21,7 +21,7 @@ import blockchain
 from config import coin_name, rpcpassword, rpcport, rpcuser
 from config import app_key, csrf_key, database_uri, program_name
 from helpers import average_age, format_time
-from models import db, Blocks, TXs, TXIn
+from models import db, Blocks, TXs, TXIn, TxOut
 
 
 class DecimalEncoder(JSONEncoder):
@@ -286,9 +286,15 @@ def tx(transaction):
     check_transaction = db.session.query(TXs).filter_by(txid=transaction.lower()).first()
     if check_transaction is not None:
         txin = db.session.query(TXIn).filter_by(txid=transaction.lower()).all()
+        txout = db.session.query(TxOut).filter_by(txid=transaction.lower()).all()
         if txin is not None:
+            block_height_lookup = db.session.query(Blocks).filter_by(height=check_transaction.block_height).first()
             return render_template('transaction.html',
-                                   inputs=txin)
+                                   the_datetime=format_time(block_height_lookup.time),
+                                   block_height=check_transaction.block_height,
+                                   inputs=txin,
+                                   outputs=txout,
+                                   this_transaction=transaction.lower())
         else:
             return render_template('404.html', error="Not a valid transaction"), 404
     else:
