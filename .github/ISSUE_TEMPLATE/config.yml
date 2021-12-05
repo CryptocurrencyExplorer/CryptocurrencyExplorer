@@ -4,5 +4,5 @@ contact_links:
     url: https://github.com/CryptocurrencyExplorer/CryptocurrencyExplorer/discussions
     about: General discussions
   - name: Questions?
-    url: https://webchat.freenode.net/?channels=%23cryptocurrencyexplorer
+    url: https://web.libera.chat/?channel=#cryptocurrencyexplorer
     about: Asynchronous chat with the dev, when available
