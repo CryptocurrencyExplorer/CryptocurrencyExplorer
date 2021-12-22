@@ -1,5 +1,5 @@
 EMPTY = []
-SUPPORTED_COINS = ['Bitcoin', 'Litecoin', 'Woodcoin']
+SUPPORTED_COINS = ['Bitcoin', 'Litecoin', 'Defcoin', 'Woodcoin']
 
 
 class Bitcoin:
@@ -13,6 +13,12 @@ class Litecoin:
     unique = {'tx': {},
               'genesis': {'timestamp': 1317972665,
                           'hash': '12a765e31ffd4059bada1e25190f6e98c99d9714d334efa41a195a7e7e04bfe2',
+                          'prev_hash': '0000000000000000000000000000000000000000000000000000000000000000'}}
+
+class Defcoin:
+    unique = {'tx': {},
+              'genesis': {'timestamp': 1394002925,
+                          'hash': '192047379f33ffd2bbbab3d53b9c4b9e9b72e48f888eadb3dcf57de95a6038ad',
                           'prev_hash': '0000000000000000000000000000000000000000000000000000000000000000'}}
 
 
