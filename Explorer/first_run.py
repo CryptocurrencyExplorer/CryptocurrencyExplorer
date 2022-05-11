@@ -17,7 +17,7 @@ from models import db
 from models import Addresses, AddressSummary, Blocks, TXIn, TXs, TxOut
 
 # This is a placeholder to indicate the transaction is empty
-EMPTY = ''
+EMPTY = []
 EXPECTED_TABLES = {'addresses', 'address_summary', 'blocks', 'txs', 'txout', 'txin'}
 
 
@@ -86,58 +86,68 @@ def lets_boogy(the_blocks, uniques):
                     how_many_vin = len(raw_block_tx['vin'])
                     how_many_vout = len(raw_block_tx['vout'])
 
-                    for vout in raw_block_tx['vout']:
-                        total_value_out += vout['value']
-                        commit_transaction_out = TxOut(txid=this_transaction,
-                                                       n=vout['n'],
-                                                       value=vout['value'],
-                                                       scriptpubkey=vout['scriptPubKey']['asm'],
-                                                       address=vout['scriptPubKey']['addresses'][0],
-                                                       linked_txid=None,
-                                                       spent=False)
-                        db.session.add(commit_transaction_out)
+                    if this_transaction in uniques['tx']:
+                        if uniques['tx'][this_transaction] == EMPTY:
+                            pass
+                    else:
+                        for vout in raw_block_tx['vout']:
+                            total_value_out += vout['value']
+                            commit_transaction_out = TxOut(txid=this_transaction,
+                                                           n=vout['n'],
+                                                           value=vout['value'],
+                                                           scriptpubkey=vout['scriptPubKey']['asm'],
+                                                           address=vout['scriptPubKey']['addresses'][0],
+                                                           linked_txid=None,
+                                                           spent=False)
+                            db.session.add(commit_transaction_out)
 
-                    for vin in raw_block_tx['vin']:
-                        if number == 0:
-                            commit_coinbase = TXIn(block_height=block_height,
-                                                   txid=this_transaction,
-                                                   n=number,
-                                                   scriptsig=vin['scriptSig']['asm'],
-                                                   sequence=vin['sequence'],
-                                                   # TODO - This needs pulled from bootstrap
-                                                   # TODO - Witness actually needs supported
-                                                   witness=None,
-                                                   coinbase=True,
-                                                   spent=False,
-                                                   prevout_hash='test',
-                                                   prevout_n=0)
-                            db.session.add(commit_coinbase)
-                        else:
-                            commit_transaction_in = TXIn(block_height=block_height,
-                                                         txid=this_transaction,
-                                                         n=number,
-                                                         scriptsig=vin['scriptSig']['asm'],
-                                                         sequence=vin['sequence'],
-                                                         # TODO - This needs pulled from bootstrap
-                                                         # TODO - Witness actually needs supported
-                                                         witness=None,
-                                                         coinbase=False,
-                                                         spent=False,
-                                                         prevout_hash='test',
-                                                         prevout_n=0)
-                            db.session.add(commit_transaction_in)
-                            # if 'vout' in vin and 'txid' in vin:
-                                # If this transaction is referenced, this should never be invalid.
-                                # Not sure if that's even possible.
-                                # vin_transaction = cryptocurrency.getrawtransaction(vin['txid'], 1)
-                                # print(f"{raw_block_tx['txid']} references {vin['txid']} as previous output -- position: {vin['vout']} of {vin_transaction['txid']}")
-                                # commit_transaction_in = TXIn(tx_id=this_transaction,
-                                                             # n=number,
-                                                             # scriptsig='test',
-                                                             # sequence=0,
+                        for vin in raw_block_tx['vin']:
+                            if number == 0:
+                                commit_coinbase = TXIn(block_height=block_height,
+                                                       txid=this_transaction,
+                                                       n=number,
+                                                       scriptsig=None,
+                                                       sequence=vin['sequence'],
+                                                       # TODO - This needs pulled from bootstrap
+                                                       # TODO - Witness actually needs supported
+                                                       witness=None,
+                                                       coinbase=True,
+                                                       # TODO
+                                                       spent=False,
+                                                       # TODO
+                                                       prevout_hash='test',
+                                                       # TODO
+                                                       prevout_n=0)
+                                db.session.add(commit_coinbase)
+                            else:
+                                commit_transaction_in = TXIn(block_height=block_height,
+                                                             txid=this_transaction,
+                                                             n=number,
+                                                             scriptsig=vin['scriptSig']['asm'],
+                                                             sequence=vin['sequence'],
                                                              # TODO - This needs pulled from bootstrap
                                                              # TODO - Witness actually needs supported
-                                                             # witness=None)
+                                                             witness=None,
+                                                             coinbase=False,
+                                                             # TODO
+                                                             spent=False,
+                                                             # TODO
+                                                             prevout_hash='test',
+                                                             # TODO
+                                                             prevout_n=0)
+                                db.session.add(commit_transaction_in)
+                                # if 'vout' in vin and 'txid' in vin:
+                                    # If this transaction is referenced, this should never be invalid.
+                                    # Not sure if that's even possible.
+                                    # vin_transaction = cryptocurrency.getrawtransaction(vin['txid'], 1)
+                                    # print(f"{raw_block_tx['txid']} references {vin['txid']} as previous output -- position: {vin['vout']} of {vin_transaction['txid']}")
+                                    # commit_transaction_in = TXIn(tx_id=this_transaction,
+                                                                 # n=number,
+                                                                 # scriptsig='test',
+                                                                 # sequence=0,
+                                                                 # TODO - This needs pulled from bootstrap
+                                                                 # TODO - Witness actually needs supported
+                                                                 # witness=None)
             if block_height == 0:
                 prev_block_hash = uniques['genesis']['prev_hash']
                 next_block_hash = the_block['nextblockhash']
@@ -251,8 +261,8 @@ if __name__ == '__main__':
         first_run_app.logger.error("One or all of these is wrong: rpcuser/rpcpassword/rpcport. Fix this in config.py")
         sys.exit()
 
-    if autodetect_coin:
-        uniques = detect_coin(cryptocurrency)
+    uniques = detect_coin(cryptocurrency)
+
     if autodetect_tables:
         detect_tables()
 

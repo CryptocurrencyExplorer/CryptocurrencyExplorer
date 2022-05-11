@@ -144,7 +144,7 @@ class TXIn(db.Model):
                   nullable=False)
     scriptsig = db.Column(db.String,
                           unique=False,
-                          nullable=False)
+                          nullable=True)
     sequence = db.Column(db.BIGINT,
                          unique=False,
                          nullable=False)
