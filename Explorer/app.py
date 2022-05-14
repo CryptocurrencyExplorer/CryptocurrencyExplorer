@@ -60,6 +60,8 @@ def create_app(csrf):
     #prep_application.config['SESSION_COOKIE_HTTPONLY'] = True
     prep_application.config['SESSION_COOKIE_NAME'] = 'csrf_token'
     #prep_application.config['SESSION_COOKIE_SECURE'] = True
+    prep_application.config['SQLALCHEMY_MAX_OVERFLOW'] = 400
+    prep_application.config['SQLALCHEMY_POOL_SIZE'] = 100
     prep_application.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     prep_application.config['SQLALCHEMY_DATABASE_URI'] = database_uri
     prep_application.config['VERSION'] = 0.7
@@ -146,7 +148,7 @@ def validate_search(search_term):
 
 @application.get("/")
 @application.post("/")
-def index():
+async def index():
     form = SearchForm(request.form)
     count = request.args.get('count', default=50, type=int)
     try:
@@ -207,12 +209,12 @@ def index():
 
 
 @application.get("/block/")
-def redirect_to_block():
+async def redirect_to_block():
     return redirect(url_for('block', block_hash_or_height="0"))
 
 
 @application.get("/block/<block_hash_or_height>/")
-def block(block_hash_or_height):
+async def block(block_hash_or_height):
     try:
         the_block_height = int(block_hash_or_height)
     except ValueError:
@@ -275,12 +277,12 @@ def block(block_hash_or_height):
 
 
 @application.get("/tx/")
-def redirect_to_tx():
+async def redirect_to_tx():
     return redirect(url_for('tx', transaction="INVALID_TRANSACTION"))
 
 
 @application.get("/tx/<transaction>")
-def tx(transaction):
+async def tx(transaction):
     # TODO - Transactions actually need done
     # Though, in order to finish this, addresses need done first
     check_transaction = db.session.query(TXs).filter_by(txid=transaction.lower()).first()
@@ -302,55 +304,55 @@ def tx(transaction):
 
 
 @application.get("/api/")
-def api_index():
+async def api_index():
     return render_template('api_index.html')
 
 
 @application.get("/api/addressbalance/")
-def redirect_to_api__address_balance():
+async def redirect_to_api__address_balance():
     return redirect(url_for('api__validate_address', address="INVALID_ADDRESS"))
 
 
 @application.get("/api/confirmations/")
-def redirect_to_api__confirmations():
+async def redirect_to_api__confirmations():
     return redirect(url_for('api__confirmations', userinput_block_height="0"))
 
 
 @application.get("/api/rawtx/")
-def redirect_to_api__rawtx():
+async def redirect_to_api__rawtx():
     return redirect(url_for('api__rawtx', transaction=""))
 
 
 @application.get("/api/receivedbyaddress/")
-def redirect_to_api__received_by_address():
+async def redirect_to_api__received_by_address():
     return redirect(url_for('api__received_by_address', address="INVALID_ADDRESS"))
 
 
 @application.get("/api/sentbyaddress/")
-def redirect_to_api__sent_by_address():
+async def redirect_to_api__sent_by_address():
     return redirect(url_for('api__sent_by_address', address="INVALID_ADDRESS"))
 
 
 @application.get("/api/validateaddress/")
-def redirect_to_api__validate_address():
+async def redirect_to_api__validate_address():
     return redirect(url_for('api__validate_address', address="INVALID_ADDRESS"))
 
 
 @application.get("/api/addressbalance/<address>")
-def api__address_balance(address):
+async def api__address_balance(address):
     return make_response(jsonify({'message': 'todo',
                                   'error': 'todo'}), 200)
 
 
 @application.get("/api/blockcount/")
-def api__block_count():
+async def api__block_count():
     most_recent_height = db.session.query(Blocks).order_by(desc('height')).first().height
     return make_response(jsonify({'message': most_recent_height,
                                   'error': 'none'}), 200)
 
 
 @application.get("/api/confirmations/<userinput_block_height>/")
-def api__confirmations(userinput_block_height):
+async def api__confirmations(userinput_block_height):
     try:
         userinput_block_height = int(userinput_block_height)
     except ValueError:
@@ -383,14 +385,14 @@ def api__confirmations(userinput_block_height):
 
 
 @application.get("/api/lastdifficulty/")
-def api__last_difficulty():
+async def api__last_difficulty():
     latest_difficulty = float(db.session.query(Blocks).order_by(desc('height')).first().difficulty)
     return make_response(jsonify({'message': latest_difficulty,
                                   'error': 'none'}), 200)
 
 
 @application.get("/api/rawtx/<transaction>")
-def api__rawtx(transaction):
+async def api__rawtx(transaction):
     try:
         the_transaction = cryptocurrency.getrawtransaction(transaction, 1)
     except JSONRPCException:
@@ -401,37 +403,37 @@ def api__rawtx(transaction):
 
 
 @application.get("/api/receivedbyaddress/<address>")
-def api__received_by_address(address):
+async def api__received_by_address(address):
     return make_response(jsonify({'message': 'todo',
                                   'error': 'todo'}), 200)
 
 
 @application.get("/api/richlist/")
-def api__rich_list():
+async def api__rich_list():
     return make_response(jsonify({'message': 'todo',
                                   'error': 'todo'}), 200)
 
 
 @application.get("/api/sentbyaddress/<address>")
-def api__sent_by_address(address):
+async def api__sent_by_address(address):
     return make_response(jsonify({'message': 'todo',
                                   'error': 'todo'}), 200)
 
 
 @application.get("/api/totalcoins/")
-def api__total_coins():
+async def api__total_coins():
     return make_response(jsonify({'message': float(cryptocurrency.gettxoutsetinfo()['total_amount']),
                                   'error': 'none'}), 200)
 
 
 @application.get("/api/totaltransactions/")
-def api__total_transactions():
+async def api__total_transactions():
     return make_response(jsonify({'message': cryptocurrency.gettxoutsetinfo()['transactions'],
                                   'error': 'none'}), 200)
 
 
 @application.get("/api/validateaddress/<address>/")
-def api__validate_address(address):
+async def api__validate_address(address):
     if cryptocurrency.validateaddress(address)['isvalid']:
         return make_response(jsonify({'message': 'valid',
                                       'error': 'none'}), 200)
