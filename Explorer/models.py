@@ -50,15 +50,18 @@ class Blocks(db.Model):
     __tablename__ = 'blocks'
     height = db.Column(db.Integer,
                        unique=True,
-                       nullable=False)
+                       nullable=False,
+                       index=True)
     hash = db.Column(db.String,
-                     primary_key=True)
+                     primary_key=True,
+                     unique=True)
     version = db.Column(db.Integer,
                         unique=False,
                         nullable=False)
     prevhash = db.Column(db.String,
                          unique=False,
-                         nullable=False)
+                         nullable=False,
+                         index=True)
     nexthash = db.Column(db.String,
                          unique=False,
                          nullable=False)
@@ -114,7 +117,8 @@ class TXs(db.Model):
                    primary_key=True)
     txid = db.Column(db.String,
                      unique=False,
-                     nullable=False)
+                     nullable=False,
+                     index=True)
     block_height = db.Column(db.Integer,
                              unique=False,
                              nullable=False)
@@ -138,10 +142,11 @@ class TXIn(db.Model):
                              nullable=False)
     txid = db.Column(db.String,
                      unique=False,
-                     nullable=False)
+                     nullable=False,
+                     index=True)
     n = db.Column(db.Integer,
                   unique=False,
-                  nullable=False)
+                  nullable=False,)
     scriptsig = db.Column(db.String,
                           unique=False,
                           nullable=True)
@@ -159,10 +164,12 @@ class TXIn(db.Model):
                       nullable=True)
     prevout_hash = db.Column(db.String,
                              unique=False,
-                             nullable=True)
+                             nullable=False,
+                             index=True)
     prevout_n = db.Column(db.Integer,
                           unique=False,
-                          nullable=True)
+                          nullable=False,
+                          index=True)
 
 
 class TxOut(db.Model):
@@ -171,10 +178,12 @@ class TxOut(db.Model):
                    primary_key=True)
     txid = db.Column(db.String,
                      unique=False,
-                     nullable=False)
+                     nullable=False,
+                     index=True)
     n = db.Column(db.Integer,
                   unique=False,
-                  nullable=False)
+                  nullable=False,
+                  index=True)
     value = db.Column(db.Numeric,
                       unique=False,
                       nullable=False)

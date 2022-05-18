@@ -7,7 +7,7 @@ from bitcoinrpc.authproxy import AuthServiceProxy, JSONRPCException
 from flask import Flask
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.sql import desc
-from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import OperationalError, IntegrityError
 import blockchain
 from blockchain import SUPPORTED_COINS
 from config import autodetect_coin, autodetect_config, autodetect_rpc, autodetect_tables
@@ -53,128 +53,136 @@ def lets_boogy(the_blocks, uniques):
 
     with click.progressbar(the_blocks, item_show_func=process_block) as progress_bar:
         for block_height in progress_bar:
-            total_value_out = decimal.Decimal(0.0)
-            block_raw_hash = cryptocurrency.getblockhash(block_height)
-            the_block = cryptocurrency.getblock(block_raw_hash)
-            total_cumulative_difficulty += decimal.Decimal(the_block['difficulty'])
-            raw_block_transactions = the_block['tx']
-            how_many_transactions = len(raw_block_transactions)
+            try:
+                total_value_out = decimal.Decimal(0.0)
+                block_raw_hash = cryptocurrency.getblockhash(block_height)
+                the_block = cryptocurrency.getblock(block_raw_hash)
+                total_cumulative_difficulty += decimal.Decimal(the_block['difficulty'])
+                raw_block_transactions = the_block['tx']
+                how_many_transactions = len(raw_block_transactions)
 
-            # Probably better to just take the latest block's height and subtract this block's height to get confirmations
-            # block_confirmations = cryptocurrency.getblockcount() + 1 - block_height
+                # Probably better to just take the latest block's height and minus this block's height to get this
+                # block_confirmations = cryptocurrency.getblockcount() + 1 - block_height
 
-            # If there's more than one transaction, we need to calculate fees.
-            # Since this involves inputs - outputs, the coinbase is done last.
-            for number, this_transaction in enumerate(raw_block_transactions):
-                # "The tx_id column is the transaction to which this output belongs,
-                # n is the position within the output list."
-                # https://grisha.org/blog/2017/12/15/blockchain-and-postgres/
-                try:
-                    raw_block_tx = cryptocurrency.getrawtransaction(this_transaction, 1)
-                except JSONRPCException as e:
-                    pass
-                    # if 'No information available about transaction' in str(e):
-                    # TODO - Add something to indicate this transaction is unavailable
-                else:
-                    the_tx = TXs(txid=this_transaction,
-                                 block_height=block_height,
-                                 n=number,
-                                 version=raw_block_tx['version'],
-                                 locktime=raw_block_tx['locktime'])
-                    db.session.add(the_tx)
-
-                    how_many_vin = len(raw_block_tx['vin'])
-                    how_many_vout = len(raw_block_tx['vout'])
-
-                    if this_transaction in uniques['tx']:
-                        if uniques['tx'][this_transaction] == EMPTY:
-                            pass
+                # If there's more than one transaction, we need to calculate fees.
+                # Since this involves inputs - outputs, the coinbase is done last.
+                for number, this_transaction in enumerate(raw_block_transactions):
+                    # "The tx_id column is the transaction to which this output belongs,
+                    # n is the position within the output list."
+                    # https://grisha.org/blog/2017/12/15/blockchain-and-postgres/
+                    try:
+                        raw_block_tx = cryptocurrency.getrawtransaction(this_transaction, 1)
+                    except JSONRPCException as e:
+                        pass
+                        # if 'No information available about transaction' in str(e):
+                        # TODO - Add something to indicate this transaction is unavailable
                     else:
-                        for vout in raw_block_tx['vout']:
-                            total_value_out += vout['value']
-                            commit_transaction_out = TxOut(txid=this_transaction,
-                                                           n=vout['n'],
-                                                           value=vout['value'],
-                                                           scriptpubkey=vout['scriptPubKey']['asm'],
-                                                           address=vout['scriptPubKey']['addresses'][0],
-                                                           linked_txid=None,
-                                                           spent=False)
-                            db.session.add(commit_transaction_out)
+                        the_tx = TXs(txid=this_transaction,
+                                     block_height=block_height,
+                                     n=number,
+                                     version=raw_block_tx['version'],
+                                     locktime=raw_block_tx['locktime'])
+                        db.session.add(the_tx)
 
-                        for vin in raw_block_tx['vin']:
-                            if number == 0:
-                                commit_coinbase = TXIn(block_height=block_height,
-                                                       txid=this_transaction,
-                                                       n=number,
-                                                       scriptsig=None,
-                                                       sequence=vin['sequence'],
-                                                       # TODO - This needs pulled from bootstrap
-                                                       # TODO - Witness actually needs supported
-                                                       witness=None,
-                                                       coinbase=True,
-                                                       # TODO
-                                                       spent=False,
-                                                       # TODO
-                                                       prevout_hash='test',
-                                                       # TODO
-                                                       prevout_n=0)
-                                db.session.add(commit_coinbase)
-                            else:
-                                commit_transaction_in = TXIn(block_height=block_height,
-                                                             txid=this_transaction,
-                                                             n=number,
-                                                             scriptsig=vin['scriptSig']['asm'],
-                                                             sequence=vin['sequence'],
-                                                             # TODO - This needs pulled from bootstrap
-                                                             # TODO - Witness actually needs supported
-                                                             witness=None,
-                                                             coinbase=False,
-                                                             # TODO
-                                                             spent=False,
-                                                             # TODO
-                                                             prevout_hash='test',
-                                                             # TODO
-                                                             prevout_n=0)
-                                db.session.add(commit_transaction_in)
-                                # if 'vout' in vin and 'txid' in vin:
+                        how_many_vin = len(raw_block_tx['vin'])
+                        how_many_vout = len(raw_block_tx['vout'])
+
+                        if this_transaction in uniques['tx']:
+                            if uniques['tx'][this_transaction] == EMPTY:
+                                pass
+                        else:
+                            for vout in raw_block_tx['vout']:
+                                total_value_out += vout['value']
+                                commit_transaction_out = TxOut(txid=this_transaction,
+                                                               n=vout['n'],
+                                                               value=vout['value'],
+                                                               scriptpubkey=vout['scriptPubKey']['asm'],
+                                                               address=vout['scriptPubKey']['addresses'][0],
+                                                               linked_txid=None,
+                                                               spent=False)
+                                db.session.add(commit_transaction_out)
+
+                            for vin_num, vin in enumerate(raw_block_tx['vin']):
+                                if number == 0 and vin_num == 0:
+                                    commit_coinbase = TXIn(block_height=block_height,
+                                                           txid=this_transaction,
+                                                           n=0,
+                                                           scriptsig=None,
+                                                           sequence=vin['sequence'],
+                                                           # TODO - This needs pulled from bootstrap
+                                                           # TODO - Witness actually needs supported
+                                                           witness=None,
+                                                           coinbase=True,
+                                                           # TODO
+                                                           spent=False,
+                                                           # TODO
+                                                           prevout_hash='test',
+                                                           # TODO
+                                                           prevout_n=0)
+                                    db.session.add(commit_coinbase)
+                                else:
+                                    previous_transaction = cryptocurrency.getrawtransaction(vin['txid'], 1)
+                                    prev_txid = previous_transaction['txid']
+                                    the_prevout_n = previous_transaction['vout'][vin['vout']]['n']
+                                    commit_transaction_in = TXIn(block_height=block_height,
+                                                                 txid=this_transaction,
+                                                                 n=number,
+                                                                 scriptsig=vin['scriptSig']['asm'],
+                                                                 sequence=vin['sequence'],
+                                                                 # TODO - This needs pulled from bootstrap
+                                                                 # TODO - Witness actually needs supported
+                                                                 witness=None,
+                                                                 coinbase=False,
+                                                                 # TODO
+                                                                 spent=False,
+                                                                 # TODO
+                                                                 prevout_hash=prev_txid,
+                                                                 # TODO
+                                                                 prevout_n=the_prevout_n)
+                                    db.session.add(commit_transaction_in)
+                                    # if 'vout' in vin and 'txid' in vin:
                                     # If this transaction is referenced, this should never be invalid.
                                     # Not sure if that's even possible.
                                     # vin_transaction = cryptocurrency.getrawtransaction(vin['txid'], 1)
                                     # print(f"{raw_block_tx['txid']} references {vin['txid']} as previous output -- position: {vin['vout']} of {vin_transaction['txid']}")
                                     # commit_transaction_in = TXIn(tx_id=this_transaction,
-                                                                 # n=number,
-                                                                 # scriptsig='test',
-                                                                 # sequence=0,
-                                                                 # TODO - This needs pulled from bootstrap
-                                                                 # TODO - Witness actually needs supported
-                                                                 # witness=None)
-            if block_height == 0:
-                prev_block_hash = uniques['genesis']['prev_hash']
-                next_block_hash = the_block['nextblockhash']
-            elif block_height != the_blocks[-1]:
-                prev_block_hash = the_block['previousblockhash']
-                next_block_hash = the_block['nextblockhash']
-            elif block_height == the_blocks[-1]:
-                prev_block_hash = the_block['previousblockhash']
-                next_block_hash = 'PLACEHOLDER'
-            this_blocks_info = Blocks(height=the_block['height'],
-                                      hash=the_block['hash'],
-                                      version=the_block['version'],
-                                      prevhash=prev_block_hash,
-                                      nexthash=next_block_hash,
-                                      merkleroot=the_block['merkleroot'],
-                                      time=the_block['time'],
-                                      bits=the_block['bits'],
-                                      nonce=the_block['nonce'],
-                                      size=the_block['size'],
-                                      difficulty=decimal.Decimal(the_block['difficulty']),
-                                      cumulative_difficulty=total_cumulative_difficulty,
-                                      value_out=total_value_out,
-                                      transactions=how_many_transactions,
-                                      # TODO
-                                      transaction_fees=decimal.Decimal(1.0))
-            db.session.add(this_blocks_info)
-            db.session.commit()
+                                    # n=number,
+                                    # scriptsig='test',
+                                    # sequence=0,
+                                    # TODO - This needs pulled from bootstrap
+                                    # TODO - Witness actually needs supported
+                                    # witness=None)
+                if block_height == 0:
+                    prev_block_hash = uniques['genesis']['prev_hash']
+                    next_block_hash = the_block['nextblockhash']
+                elif block_height != the_blocks[-1]:
+                    prev_block_hash = the_block['previousblockhash']
+                    next_block_hash = the_block['nextblockhash']
+                elif block_height == the_blocks[-1]:
+                    prev_block_hash = the_block['previousblockhash']
+                    next_block_hash = 'PLACEHOLDER'
+                this_blocks_info = Blocks(height=the_block['height'],
+                                          hash=the_block['hash'],
+                                          version=the_block['version'],
+                                          prevhash=prev_block_hash,
+                                          nexthash=next_block_hash,
+                                          merkleroot=the_block['merkleroot'],
+                                          time=the_block['time'],
+                                          bits=the_block['bits'],
+                                          nonce=the_block['nonce'],
+                                          size=the_block['size'],
+                                          difficulty=decimal.Decimal(the_block['difficulty']),
+                                          cumulative_difficulty=total_cumulative_difficulty,
+                                          value_out=total_value_out,
+                                          transactions=how_many_transactions,
+                                          # TODO
+                                          transaction_fees=decimal.Decimal(1.0))
+                db.session.add(this_blocks_info)
+                this_block_finished = True
+                if this_block_finished:
+                    db.session.commit()
+            except IntegrityError as e:
+                db.session.rollback()
 
 
 def detect_flask_config():
