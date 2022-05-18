@@ -5,7 +5,7 @@
 {{ super() }}
 {% endblock %}
 
-{% block additional_text %}<a href="/tx/{{ block_hash }}">{{ config.COIN_NAME }}</a> {{ block_height }}{% endblock %}
+{% block additional_text %}Transaction {{ this_transaction[0:11] }}...{{ this_transaction[-5:] }}{% endblock %}
 
 {% block the_form %}
 {% endblock %}
@@ -55,8 +55,8 @@
                     <tr>
                     <td><a id="o{{ loop.index0 }}">{{ loop.index0 }}</a></td>
                     <td><a href="">TODO</a></td>
-                    <td>TODO</td>
-                    <td><a href="">TODO</a></td>
+                    <td>{{ vout.amount }}</td>
+                    <td><a href="">{{ vout.address }}</a></td>
                     <td>{{ vout.scriptpubkey }}</td>
                 </tr>
                 {% endfor %}
