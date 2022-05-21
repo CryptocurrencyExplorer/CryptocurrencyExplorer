@@ -5,7 +5,7 @@
 {{ super() }}
 {% endblock %}
 
-{% block additional_text %}Transaction {{ this_transaction[0:11] }}...{{ this_transaction[-5:] }}{% endblock %}
+{% block additional_text %}Transaction {{ this_transaction[0:10] }}...{{ this_transaction[-4:] }}{% endblock %}
 
 {% block the_form %}
 {% endblock %}
@@ -17,13 +17,14 @@
 {% block additional_body %}
            <p>
                 Hash: {{ this_transaction }}<br />
-                Appeared in <a href="/block/{{ block_height }}">{{ block_height }}</a> ({{ the_datetime }})<br />
+                Appeared in <a href="/block/{{ block_height }}">{% if config.COIN_NAME is not none %}{{ config.COIN_NAME }}{% else %}Cryptocurrency{% endif %} {{ block_height }}</a> ({{ the_datetime }})<br />
                 Number of inputs: {% if inputs|length >= 1 %}{{ inputs|length }}{% endif %} (<a href="#inputs">Jump to inputs</a>)<br />
                 Total in: TODO<br />
                 Number of outputs: {% if outputs|length >= 1 %}{{ outputs|length }}{% endif %} (<a href="#outputs">Jump to outputs</a>)<br />
                 Total out: TODO<br />
                 Size: TODO<br />
                 Fee: TODO<br />
+                <a href="/api/rawtx/{{ this_transaction }}">Raw transaction</a>
             </p>
             <a id="inputs"><h3>Inputs</h3></a>
             <table class="table">

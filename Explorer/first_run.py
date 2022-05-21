@@ -39,7 +39,7 @@ def process_block(item):
         return f'Processing block {item} / {the_blocks[-1]}'
 
 
-def lets_boogy(the_blocks, uniques):
+def lets_boogy(the_blocks, uniques, cryptocurrency):
     if the_blocks[0] == 0:
         total_cumulative_difficulty = decimal.Decimal(0.0)
     else:
@@ -50,6 +50,7 @@ def lets_boogy(the_blocks, uniques):
             next_block_hash = cryptocurrency.getblockhash(current_block.height + 1)
             current_block.nexthash = next_block_hash
             db.session.commit()
+            db.session.remove()
 
     with click.progressbar(the_blocks, item_show_func=process_block) as progress_bar:
         for block_height in progress_bar:
@@ -158,7 +159,7 @@ def lets_boogy(the_blocks, uniques):
                 elif block_height != the_blocks[-1]:
                     prev_block_hash = the_block['previousblockhash']
                     next_block_hash = the_block['nextblockhash']
-                elif block_height == the_blocks[-1]:
+                else:
                     prev_block_hash = the_block['previousblockhash']
                     next_block_hash = 'PLACEHOLDER'
                 this_blocks_info = Blocks(height=the_block['height'],
@@ -181,6 +182,7 @@ def lets_boogy(the_blocks, uniques):
                 this_block_finished = True
                 if this_block_finished:
                     db.session.commit()
+                    db.session.remove()
             except IntegrityError as e:
                 db.session.rollback()
 
@@ -264,23 +266,24 @@ if __name__ == '__main__':
     if autodetect_config:
         detect_flask_config()
     try:
-        cryptocurrency = AuthServiceProxy(f"http://{rpcuser}:{rpcpassword}@127.0.0.1:{rpcport}")
+        crypto_currency = AuthServiceProxy(f"http://{rpcuser}:{rpcpassword}@127.0.0.1:{rpcport}")
     except(JSONRPCException, ValueError):
         first_run_app.logger.error("One or all of these is wrong: rpcuser/rpcpassword/rpcport. Fix this in config.py")
         sys.exit()
 
-    uniques = detect_coin(cryptocurrency)
+    uniques = detect_coin(crypto_currency)
 
     if autodetect_tables:
         detect_tables()
 
-    most_recent_block = cryptocurrency.getblockcount()
+    most_recent_block = crypto_currency.getblockcount()
 
     try:
         most_recent_stored_block = db.session.query(Blocks).order_by(desc('height')).first().height
+        db.session.remove()
     except AttributeError:
         the_blocks = range(0, most_recent_block + 1)
-        lets_boogy(the_blocks, uniques)
+        lets_boogy(the_blocks, uniques, crypto_currency)
     except OperationalError as exception:
         if 'database' in str(exception) and 'does not exist' in str(exception):
             first_run_app.logger.info("You'll need to follow the documentation to create the database.")
@@ -289,7 +292,8 @@ if __name__ == '__main__':
         while True:
             user_input = input('(C)ontinue, (D)rop all, or (E)xit?: ').lower()
             if user_input in ['d', 'drop', 'drop all']:
-                db.drop_all()
+                with first_run_app.app_context():
+                    db.drop_all()
                 break
             elif user_input in ['c', 'continue']:
                 break
@@ -298,8 +302,8 @@ if __name__ == '__main__':
             else:
                 print('Can you try that again?')
         if most_recent_stored_block != most_recent_block:
-            the_blocks = range(most_recent_stored_block + 1, most_recent_block + 1)
-            lets_boogy(the_blocks, uniques)
+            all_the_blocks = range(most_recent_stored_block + 1, most_recent_block + 1)
+            lets_boogy(all_the_blocks, uniques, crypto_currency)
         else:
             first_run_app.logger.info("Looks like you're all up-to-date")
             sys.exit()

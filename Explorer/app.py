@@ -13,6 +13,7 @@ from flask import redirect, request, url_for, render_template, session
 from flask.json import JSONEncoder
 from flask_wtf import FlaskForm
 from flask_wtf.csrf import CSRFError, CSRFProtect
+from sqlalchemy.pool import NullPool
 from sqlalchemy.sql import desc
 from werkzeug.middleware.proxy_fix import ProxyFix
 from wtforms import StringField, SubmitField
@@ -48,7 +49,7 @@ def create_app(csrf):
         prep_application.logger.error("coin_name in config.py needs to be set.")
         sys.exit()
     try:
-        coin_uniques = getattr(blockchain, prep_application.config['COIN_NAME'])().unique
+        coin__uniques = getattr(blockchain, prep_application.config['COIN_NAME'])().unique
     # TypeError needs caught in case someone tries non-strings for the coin_name... for whatever reason?
     except(AttributeError, TypeError):
         prep_application.logger.error("coin_name in config.py is not a supported coin.")
@@ -56,15 +57,14 @@ def create_app(csrf):
     prep_application.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
     prep_application.config['MAX_CONTENT_LENGTH'] = 256
     prep_application.config['PROGRAM_NAME'] = program_name
-    #prep_application.config['REMEMBER_COOKIE_HTTPONLY'] = True
-    #prep_application.config['SESSION_COOKIE_HTTPONLY'] = True
+    # prep_application.config['REMEMBER_COOKIE_HTTPONLY'] = True
+    # prep_application.config['SESSION_COOKIE_HTTPONLY'] = True
     prep_application.config['SESSION_COOKIE_NAME'] = 'csrf_token'
-    #prep_application.config['SESSION_COOKIE_SECURE'] = True
-    prep_application.config['SQLALCHEMY_MAX_OVERFLOW'] = 400
-    prep_application.config['SQLALCHEMY_POOL_SIZE'] = 100
+    # prep_application.config['SESSION_COOKIE_SECURE'] = True
     prep_application.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     prep_application.config['SQLALCHEMY_DATABASE_URI'] = database_uri
-    prep_application.config['VERSION'] = 0.7
+    prep_application.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'poolclass': NullPool}
+    prep_application.config['VERSION'] = 0.8
     prep_application.config['WTF_CSRF_SECRET_KEY'] = csrf_key
     prep_application.jinja_env.trim_blocks = True
     prep_application.jinja_env.lstrip_blocks = True
@@ -72,11 +72,11 @@ def create_app(csrf):
     db.init_app(prep_application)
     csrf.init_app(prep_application)
     try:
-        cryptocurrency = AuthServiceProxy(f"http://{rpcuser}:{rpcpassword}@127.0.0.1:{rpcport}")
+        crypto_currency = AuthServiceProxy(f"http://{rpcuser}:{rpcpassword}@127.0.0.1:{rpcport}")
     except ValueError:
         prep_application.logger.error("One of these is wrong: rpcuser/rpcpassword/rpcport. Fix this in config.py.")
         sys.exit()
-    return prep_application, coin_uniques, cryptocurrency
+    return prep_application, coin__uniques, crypto_currency
 
 
 csrf = CSRFProtect()
@@ -87,6 +87,13 @@ application.app_context().push()
 @application.before_request
 def set_session_permanent():
     session.permanent = True
+
+
+@application.teardown_request
+def teardown_request(exc):
+    db.session.close()
+    with application.app_context():
+        db.session.close()
 
 
 @application.errorhandler(CSRFError)
@@ -148,7 +155,7 @@ def validate_search(search_term):
 
 @application.get("/")
 @application.post("/")
-async def index():
+def index():
     form = SearchForm(request.form)
     count = request.args.get('count', default=50, type=int)
     try:
@@ -209,12 +216,12 @@ async def index():
 
 
 @application.get("/block/")
-async def redirect_to_block():
+def redirect_to_block():
     return redirect(url_for('block', block_hash_or_height="0"))
 
 
 @application.get("/block/<block_hash_or_height>/")
-async def block(block_hash_or_height):
+def block(block_hash_or_height):
     try:
         the_block_height = int(block_hash_or_height)
     except ValueError:
@@ -277,12 +284,12 @@ async def block(block_hash_or_height):
 
 
 @application.get("/tx/")
-async def redirect_to_tx():
+def redirect_to_tx():
     return redirect(url_for('tx', transaction="INVALID_TRANSACTION"))
 
 
 @application.get("/tx/<transaction>")
-async def tx(transaction):
+def tx(transaction):
     # TODO - Transactions actually need done
     # Though, in order to finish this, addresses need done first
     check_transaction = db.session.query(TXs).filter_by(txid=transaction.lower()).first()
@@ -304,55 +311,55 @@ async def tx(transaction):
 
 
 @application.get("/api/")
-async def api_index():
+def api_index():
     return render_template('api_index.html')
 
 
 @application.get("/api/addressbalance/")
-async def redirect_to_api__address_balance():
+def redirect_to_api__address_balance():
     return redirect(url_for('api__validate_address', address="INVALID_ADDRESS"))
 
 
 @application.get("/api/confirmations/")
-async def redirect_to_api__confirmations():
+def redirect_to_api__confirmations():
     return redirect(url_for('api__confirmations', userinput_block_height="0"))
 
 
 @application.get("/api/rawtx/")
-async def redirect_to_api__rawtx():
+def redirect_to_api__rawtx():
     return redirect(url_for('api__rawtx', transaction=""))
 
 
 @application.get("/api/receivedbyaddress/")
-async def redirect_to_api__received_by_address():
+def redirect_to_api__received_by_address():
     return redirect(url_for('api__received_by_address', address="INVALID_ADDRESS"))
 
 
 @application.get("/api/sentbyaddress/")
-async def redirect_to_api__sent_by_address():
+def redirect_to_api__sent_by_address():
     return redirect(url_for('api__sent_by_address', address="INVALID_ADDRESS"))
 
 
 @application.get("/api/validateaddress/")
-async def redirect_to_api__validate_address():
+def redirect_to_api__validate_address():
     return redirect(url_for('api__validate_address', address="INVALID_ADDRESS"))
 
 
 @application.get("/api/addressbalance/<address>")
-async def api__address_balance(address):
+def api__address_balance(address):
     return make_response(jsonify({'message': 'todo',
                                   'error': 'todo'}), 200)
 
 
 @application.get("/api/blockcount/")
-async def api__block_count():
+def api__block_count():
     most_recent_height = db.session.query(Blocks).order_by(desc('height')).first().height
     return make_response(jsonify({'message': most_recent_height,
                                   'error': 'none'}), 200)
 
 
 @application.get("/api/confirmations/<userinput_block_height>/")
-async def api__confirmations(userinput_block_height):
+def api__confirmations(userinput_block_height):
     try:
         userinput_block_height = int(userinput_block_height)
     except ValueError:
@@ -385,14 +392,14 @@ async def api__confirmations(userinput_block_height):
 
 
 @application.get("/api/lastdifficulty/")
-async def api__last_difficulty():
+def api__last_difficulty():
     latest_difficulty = float(db.session.query(Blocks).order_by(desc('height')).first().difficulty)
     return make_response(jsonify({'message': latest_difficulty,
                                   'error': 'none'}), 200)
 
 
 @application.get("/api/rawtx/<transaction>")
-async def api__rawtx(transaction):
+def api__rawtx(transaction):
     try:
         the_transaction = cryptocurrency.getrawtransaction(transaction, 1)
     except JSONRPCException:
@@ -403,37 +410,37 @@ async def api__rawtx(transaction):
 
 
 @application.get("/api/receivedbyaddress/<address>")
-async def api__received_by_address(address):
+def api__received_by_address(address):
     return make_response(jsonify({'message': 'todo',
                                   'error': 'todo'}), 200)
 
 
 @application.get("/api/richlist/")
-async def api__rich_list():
+def api__rich_list():
     return make_response(jsonify({'message': 'todo',
                                   'error': 'todo'}), 200)
 
 
 @application.get("/api/sentbyaddress/<address>")
-async def api__sent_by_address(address):
+def api__sent_by_address(address):
     return make_response(jsonify({'message': 'todo',
                                   'error': 'todo'}), 200)
 
 
 @application.get("/api/totalcoins/")
-async def api__total_coins():
+def api__total_coins():
     return make_response(jsonify({'message': float(cryptocurrency.gettxoutsetinfo()['total_amount']),
                                   'error': 'none'}), 200)
 
 
 @application.get("/api/totaltransactions/")
-async def api__total_transactions():
+def api__total_transactions():
     return make_response(jsonify({'message': cryptocurrency.gettxoutsetinfo()['transactions'],
                                   'error': 'none'}), 200)
 
 
 @application.get("/api/validateaddress/<address>/")
-async def api__validate_address(address):
+def api__validate_address(address):
     if cryptocurrency.validateaddress(address)['isvalid']:
         return make_response(jsonify({'message': 'valid',
                                       'error': 'none'}), 200)
