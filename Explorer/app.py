@@ -57,7 +57,9 @@ def create_app(csrf):
     prep_application.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
     prep_application.config['MAX_CONTENT_LENGTH'] = 256
     prep_application.config['PROGRAM_NAME'] = program_name
+    # This appears to be an issue -- https://github.com/wtforms/flask-wtf/issues/521.
     # prep_application.config['REMEMBER_COOKIE_HTTPONLY'] = True
+    #
     # prep_application.config['SESSION_COOKIE_HTTPONLY'] = True
     prep_application.config['SESSION_COOKIE_NAME'] = 'csrf_token'
     # prep_application.config['SESSION_COOKIE_SECURE'] = True
