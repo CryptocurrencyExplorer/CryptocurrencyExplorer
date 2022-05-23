@@ -89,13 +89,6 @@ def set_session_permanent():
     session.permanent = True
 
 
-@application.teardown_request
-def teardown_request(exc):
-    db.session.close()
-    with application.app_context():
-        db.session.close()
-
-
 @application.errorhandler(CSRFError)
 def handle_csrf_error(e):
     return render_template('404.html', error=e.description), 400
