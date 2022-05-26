@@ -393,6 +393,17 @@ def api__last_difficulty():
                                   'error': 'none'}), 200)
 
 
+@application.get("/api/mempool")
+def api__mempool():
+    try:
+        the_mempool = cryptocurrency.getrawmempool(True)
+    except JSONRPCException:
+        return make_response(jsonify({'message': 'There was a JSON error. Try again later',
+                                      'error': 'invalid'}), 422)
+    else:
+        return make_response(jsonify(the_mempool), 200)
+
+
 @application.get("/api/rawtx/<transaction>")
 def api__rawtx(transaction):
     try:
