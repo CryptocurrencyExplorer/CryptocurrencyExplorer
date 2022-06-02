@@ -1,5 +1,4 @@
 click~=8.0.3
-python-bitcoinrpc~=1.0
 Flask~=2.1.2
 SQLAlchemy~=1.4.36
 Werkzeug~=2.1.2
