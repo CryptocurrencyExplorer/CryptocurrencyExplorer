@@ -4,3 +4,4 @@ Flask~=2.1.2
 SQLAlchemy~=1.4.36
 Werkzeug~=2.1.2
 WTForms~=3.0.1
+requests~=2.27.1

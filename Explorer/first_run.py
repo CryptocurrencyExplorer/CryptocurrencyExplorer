@@ -3,7 +3,6 @@ import logging
 import sys
 import click
 from logging.handlers import RotatingFileHandler
-from bitcoinrpc.authproxy import AuthServiceProxy, JSONRPCException
 from flask import Flask
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.sql import desc
@@ -13,6 +12,7 @@ from blockchain import SUPPORTED_COINS
 from config import autodetect_coin, autodetect_config, autodetect_rpc, autodetect_tables
 from config import coin_name, rpcpassword, rpcport, rpcuser
 from config import app_key, csrf_key, database_uri
+from helpers import JSONRPC, JSONRPCException
 from models import db
 from models import Addresses, AddressSummary, Blocks, TXIn, TXs, TxOut
 
@@ -34,9 +34,9 @@ def create_app():
     return first_run
 
 
-def process_block(item):
-    if item is not None:
-        return f'Processing block {item} / {the_blocks[-1]}'
+def process_block(current_item):
+    if current_item is not None:
+        return f'Processing block {current_item} / {len(all_the_blocks)}'
 
 
 def lets_boogy(the_blocks, uniques, cryptocurrency):
@@ -50,12 +50,15 @@ def lets_boogy(the_blocks, uniques, cryptocurrency):
             next_block_hash = cryptocurrency.getblockhash(current_block.height + 1)
             current_block.nexthash = next_block_hash
             db.session.commit()
-            db.session.remove()
 
     with click.progressbar(the_blocks, item_show_func=process_block) as progress_bar:
         for block_height in progress_bar:
             try:
                 total_value_out = decimal.Decimal(0.0)
+                total_value_out_sans_coinbase = decimal.Decimal(0.0)
+                prev_out_total_out = decimal.Decimal(0.0)
+                prev_out_total_out_with_fees = decimal.Decimal(0.0)
+                total_fees = decimal.Decimal(0.0)
                 block_raw_hash = cryptocurrency.getblockhash(block_height)
                 the_block = cryptocurrency.getblock(block_raw_hash)
                 total_cumulative_difficulty += decimal.Decimal(the_block['difficulty'])
@@ -73,26 +76,18 @@ def lets_boogy(the_blocks, uniques, cryptocurrency):
                     # https://grisha.org/blog/2017/12/15/blockchain-and-postgres/
                     try:
                         raw_block_tx = cryptocurrency.getrawtransaction(this_transaction, 1)
-                    except JSONRPCException as e:
+                    except Exception as e:
                         pass
                         # if 'No information available about transaction' in str(e):
                         # TODO - Add something to indicate this transaction is unavailable
                     else:
-                        the_tx = TXs(txid=this_transaction,
-                                     block_height=block_height,
-                                     n=number,
-                                     version=raw_block_tx['version'],
-                                     locktime=raw_block_tx['locktime'])
-                        db.session.add(the_tx)
-
-                        how_many_vin = len(raw_block_tx['vin'])
-                        how_many_vout = len(raw_block_tx['vout'])
-
                         if this_transaction in uniques['tx']:
                             if uniques['tx'][this_transaction] == EMPTY:
                                 pass
                         else:
                             for vout in raw_block_tx['vout']:
+                                if number != 0:
+                                    total_value_out_sans_coinbase += vout['value']
                                 total_value_out += vout['value']
                                 commit_transaction_out = TxOut(txid=this_transaction,
                                                                n=vout['n'],
@@ -117,14 +112,18 @@ def lets_boogy(the_blocks, uniques, cryptocurrency):
                                                            # TODO
                                                            spent=False,
                                                            # TODO
-                                                           prevout_hash='test',
+                                                           prevout_hash='COINBASE',
                                                            # TODO
                                                            prevout_n=0)
                                     db.session.add(commit_coinbase)
                                 else:
                                     previous_transaction = cryptocurrency.getrawtransaction(vin['txid'], 1)
                                     prev_txid = previous_transaction['txid']
-                                    the_prevout_n = previous_transaction['vout'][vin['vout']]['n']
+                                    this_prev_vin = previous_transaction['vout'][vin['vout']]
+                                    the_prevout_n = this_prev_vin['n']
+                                    prevout_value = this_prev_vin['value']
+                                    prev_out_total_out += prevout_value
+                                    prevout_address = this_prev_vin['scriptPubKey']['addresses'][0]
                                     commit_transaction_in = TXIn(block_height=block_height,
                                                                  txid=this_transaction,
                                                                  n=number,
@@ -140,19 +139,21 @@ def lets_boogy(the_blocks, uniques, cryptocurrency):
                                                                  prevout_hash=prev_txid,
                                                                  # TODO
                                                                  prevout_n=the_prevout_n)
+                                    the_previous_transaction = TXIn.query.filter_by(txid=prev_txid).first()
+                                    the_previous_transaction.spent = True
+                                    db.session.commit()
                                     db.session.add(commit_transaction_in)
-                                    # if 'vout' in vin and 'txid' in vin:
-                                    # If this transaction is referenced, this should never be invalid.
-                                    # Not sure if that's even possible.
-                                    # vin_transaction = cryptocurrency.getrawtransaction(vin['txid'], 1)
-                                    # print(f"{raw_block_tx['txid']} references {vin['txid']} as previous output -- position: {vin['vout']} of {vin_transaction['txid']}")
-                                    # commit_transaction_in = TXIn(tx_id=this_transaction,
-                                    # n=number,
-                                    # scriptsig='test',
-                                    # sequence=0,
-                                    # TODO - This needs pulled from bootstrap
-                                    # TODO - Witness actually needs supported
-                                    # witness=None)
+                        total_fees = prev_out_total_out - total_value_out_sans_coinbase
+                        the_tx = TXs(txid=this_transaction,
+                                     block_height=block_height,
+                                     size=raw_block_tx['size'],
+                                     n=number,
+                                     version=raw_block_tx['version'],
+                                     locktime=raw_block_tx['locktime'],
+                                     total_in=0.0,
+                                     total_out=total_value_out,
+                                     fee=total_fees)
+                        db.session.add(the_tx)
                 if block_height == 0:
                     prev_block_hash = uniques['genesis']['prev_hash']
                     next_block_hash = the_block['nextblockhash']
@@ -182,8 +183,8 @@ def lets_boogy(the_blocks, uniques, cryptocurrency):
                 this_block_finished = True
                 if this_block_finished:
                     db.session.commit()
-                    db.session.remove()
             except IntegrityError as e:
+                first_run_app.logger.error(f"ERROR: {str(e)}")
                 db.session.rollback()
 
 
@@ -266,7 +267,8 @@ if __name__ == '__main__':
     if autodetect_config:
         detect_flask_config()
     try:
-        crypto_currency = AuthServiceProxy(f"http://{rpcuser}:{rpcpassword}@127.0.0.1:{rpcport}")
+        rpcurl = f"http://127.0.0.1:{rpcport}"
+        crypto_currency = JSONRPC(rpcurl, rpcuser, rpcpassword, '')
     except(JSONRPCException, ValueError):
         first_run_app.logger.error("One or all of these is wrong: rpcuser/rpcpassword/rpcport. Fix this in config.py")
         sys.exit()
@@ -280,10 +282,9 @@ if __name__ == '__main__':
 
     try:
         most_recent_stored_block = db.session.query(Blocks).order_by(desc('height')).first().height
-        db.session.remove()
     except AttributeError:
-        the_blocks = range(0, most_recent_block + 1)
-        lets_boogy(the_blocks, uniques, crypto_currency)
+        all_the_blocks = range(0, most_recent_block + 1)
+        lets_boogy(all_the_blocks, uniques, crypto_currency)
     except OperationalError as exception:
         if 'database' in str(exception) and 'does not exist' in str(exception):
             first_run_app.logger.info("You'll need to follow the documentation to create the database.")
@@ -297,7 +298,7 @@ if __name__ == '__main__':
                 break
             elif user_input in ['c', 'continue']:
                 break
-            elif user_input in ['e', 'exit']:
+            elif user_input in ['e', 'exit', 'x', 'quit', 'leave']:
                 sys.exit()
             else:
                 print('Can you try that again?')

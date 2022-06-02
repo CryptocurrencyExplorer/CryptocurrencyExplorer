@@ -10,7 +10,8 @@ class Addresses(db.Model):
                    primary_key=True)
     address = db.Column(db.String,
                         unique=False,
-                        nullable=False)
+                        nullable=False,
+                        index=True)
     amount = db.Column(db.Numeric,
                        unique=False,
                        nullable=False)
@@ -97,20 +98,6 @@ class Blocks(db.Model):
                                  nullable=False)
 
 
-# This IS used, but everything is already in TXs.
-# So this is just duplication of effort here.
-#class BlockTXs(db.Model):
-#    __tablename__ = 'blocktxs'
-#    id = db.Column(db.Integer,
-#                   primary_key=True)
-#    block_height = db.Column(db.Integer,
-#                             nullable=False)
-#    n = db.Column(db.Integer,
-#                  nullable=False)
-#    txid = db.Column(db.String,
-#                     nullable=False)
-
-
 class TXs(db.Model):
     __tablename__ = 'txs'
     id = db.Column(db.Integer,
@@ -122,6 +109,9 @@ class TXs(db.Model):
     block_height = db.Column(db.Integer,
                              unique=False,
                              nullable=False)
+    size = db.Column(db.Numeric,
+                     unique=False,
+                     nullable=False)
     n = db.Column(db.Integer,
                   nullable=False,
                   unique=False)
@@ -131,6 +121,15 @@ class TXs(db.Model):
     locktime = db.Column(db.Integer,
                          unique=False,
                          nullable=False)
+    total_in = db.Column(db.Numeric,
+                         unique=False,
+                         nullable=False)
+    total_out = db.Column(db.Numeric,
+                          unique=False,
+                          nullable=False)
+    fee = db.Column(db.Numeric,
+                    unique=False,
+                    nullable=False)
 
 
 class TXIn(db.Model):
@@ -146,7 +145,7 @@ class TXIn(db.Model):
                      index=True)
     n = db.Column(db.Integer,
                   unique=False,
-                  nullable=False,)
+                  nullable=False)
     scriptsig = db.Column(db.String,
                           unique=False,
                           nullable=True)

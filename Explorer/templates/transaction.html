@@ -22,8 +22,8 @@
                 Total in: TODO<br />
                 Number of outputs: {% if outputs|length >= 1 %}{{ outputs|length }}{% endif %} (<a href="#outputs">Jump to outputs</a>)<br />
                 Total out: TODO<br />
-                Size: TODO<br />
-                Fee: TODO<br />
+                Size: {{ size }}<br />
+                Fee: {{ fee }}<br />
                 <a href="/api/rawtx/{{ this_transaction }}">Raw transaction</a>
             </p>
             <a id="inputs"><h3>Inputs</h3></a>

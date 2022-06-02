@@ -7,7 +7,6 @@ import logging
 import sys
 from decimal import Decimal
 from logging.handlers import RotatingFileHandler
-from bitcoinrpc.authproxy import AuthServiceProxy, JSONRPCException
 from flask import Flask, jsonify, make_response, send_from_directory
 from flask import redirect, request, url_for, render_template, session
 from flask.json import JSONEncoder
@@ -21,7 +20,7 @@ from wtforms.validators import DataRequired, Length
 import blockchain
 from config import coin_name, rpcpassword, rpcport, rpcuser
 from config import app_key, csrf_key, database_uri, program_name
-from helpers import average_age, format_time
+from helpers import average_age, format_time, JSONRPC, JSONRPCException
 from models import db, Blocks, TXs, TXIn, TxOut
 
 
@@ -32,7 +31,7 @@ class DecimalEncoder(JSONEncoder):
         return JSONEncoder.default(self, obj)
 
 
-def create_app(csrf):
+def create_app(the_csrf):
     prep_application = Flask(__name__)
     prep_application.debug = False
     prep_application.json_encoder = DecimalEncoder
@@ -72,9 +71,10 @@ def create_app(csrf):
     prep_application.jinja_env.lstrip_blocks = True
     prep_application.wsgi_app = ProxyFix(prep_application.wsgi_app, x_proto=1, x_host=1)
     db.init_app(prep_application)
-    csrf.init_app(prep_application)
+    the_csrf.init_app(prep_application)
+    rpcurl = f"http://127.0.0.1:{rpcport}"
     try:
-        crypto_currency = AuthServiceProxy(f"http://{rpcuser}:{rpcpassword}@127.0.0.1:{rpcport}")
+        crypto_currency = JSONRPC(rpcurl, rpcuser, rpcpassword)
     except ValueError:
         prep_application.logger.error("One of these is wrong: rpcuser/rpcpassword/rpcport. Fix this in config.py.")
         sys.exit()
@@ -291,14 +291,16 @@ def tx(transaction):
     if check_transaction is not None:
         txin = db.session.query(TXIn).filter_by(txid=transaction.lower()).all()
         txout = db.session.query(TxOut).filter_by(txid=transaction.lower()).all()
-        if txin is not None:
+        if txin is not None and txout is not None:
             block_height_lookup = db.session.query(Blocks).filter_by(height=check_transaction.block_height).first()
             return render_template('transaction.html',
                                    the_datetime=format_time(block_height_lookup.time),
                                    block_height=check_transaction.block_height,
                                    inputs=txin,
                                    outputs=txout,
-                                   this_transaction=transaction.lower())
+                                   this_transaction=transaction.lower(),
+                                   fee=check_transaction.fee,
+                                   size=check_transaction.size)
         else:
             return render_template('404.html', error="Not a valid transaction"), 404
     else:
@@ -393,7 +395,7 @@ def api__last_difficulty():
                                   'error': 'none'}), 200)
 
 
-@application.get("/api/mempool")
+@application.get("/api/mempool/")
 def api__mempool():
     try:
         the_mempool = cryptocurrency.getrawmempool(True)
