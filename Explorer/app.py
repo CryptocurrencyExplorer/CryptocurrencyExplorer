@@ -283,7 +283,7 @@ def redirect_to_tx():
     return redirect(url_for('tx', transaction="INVALID_TRANSACTION"))
 
 
-@application.get("/tx/<transaction>")
+@application.get("/tx/<transaction>/")
 def tx(transaction):
     # TODO - Transactions actually need done
     # Though, in order to finish this, addresses need done first
@@ -342,7 +342,7 @@ def redirect_to_api__validate_address():
     return redirect(url_for('api__validate_address', address="INVALID_ADDRESS"))
 
 
-@application.get("/api/addressbalance/<address>")
+@application.get("/api/addressbalance/<address>/")
 def api__address_balance(address):
     return make_response(jsonify({'message': 'todo',
                                   'error': 'todo'}), 200)
@@ -406,7 +406,7 @@ def api__mempool():
         return make_response(jsonify(the_mempool), 200)
 
 
-@application.get("/api/rawtx/<transaction>")
+@application.get("/api/rawtx/<transaction>/")
 def api__rawtx(transaction):
     try:
         the_transaction = cryptocurrency.getrawtransaction(transaction, 1)
@@ -417,7 +417,7 @@ def api__rawtx(transaction):
         return make_response(jsonify(the_transaction), 200)
 
 
-@application.get("/api/receivedbyaddress/<address>")
+@application.get("/api/receivedbyaddress/<address>/")
 def api__received_by_address(address):
     return make_response(jsonify({'message': 'todo',
                                   'error': 'todo'}), 200)
@@ -429,7 +429,7 @@ def api__rich_list():
                                   'error': 'todo'}), 200)
 
 
-@application.get("/api/sentbyaddress/<address>")
+@application.get("/api/sentbyaddress/<address>/")
 def api__sent_by_address(address):
     return make_response(jsonify({'message': 'todo',
                                   'error': 'todo'}), 200)

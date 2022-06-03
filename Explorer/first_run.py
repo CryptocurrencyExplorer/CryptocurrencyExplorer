@@ -36,7 +36,7 @@ def create_app():
 
 def process_block(current_item):
     if current_item is not None:
-        return f'Processing block {current_item} / {len(all_the_blocks)}'
+        return f'Processing block {current_item} / {block_length}'
 
 
 def lets_boogy(the_blocks, uniques, cryptocurrency):
@@ -284,6 +284,7 @@ if __name__ == '__main__':
         most_recent_stored_block = db.session.query(Blocks).order_by(desc('height')).first().height
     except AttributeError:
         all_the_blocks = range(0, most_recent_block + 1)
+        block_length = len(all_the_blocks)
         lets_boogy(all_the_blocks, uniques, crypto_currency)
     except OperationalError as exception:
         if 'database' in str(exception) and 'does not exist' in str(exception):
@@ -304,6 +305,7 @@ if __name__ == '__main__':
                 print('Can you try that again?')
         if most_recent_stored_block != most_recent_block:
             all_the_blocks = range(most_recent_stored_block + 1, most_recent_block + 1)
+            block_length = most_recent_block
             lets_boogy(all_the_blocks, uniques, crypto_currency)
         else:
             first_run_app.logger.info("Looks like you're all up-to-date")
