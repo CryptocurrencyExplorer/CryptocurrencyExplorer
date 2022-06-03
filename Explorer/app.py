@@ -21,7 +21,7 @@ import blockchain
 from config import coin_name, rpcpassword, rpcport, rpcuser
 from config import app_key, csrf_key, database_uri, program_name
 from helpers import average_age, format_time, JSONRPC, JSONRPCException
-from models import db, Blocks, TXs, TXIn, TxOut
+from models import db, Blocks, CoinbaseTXIn, TXs, TXIn, TxOut
 
 
 class DecimalEncoder(JSONEncoder):
@@ -289,11 +289,13 @@ def tx(transaction):
     # Though, in order to finish this, addresses need done first
     check_transaction = db.session.query(TXs).filter_by(txid=transaction.lower()).first()
     if check_transaction is not None:
+        coinbase = db.session.query(CoinbaseTXIn).filter_by(txid=transaction.lower()).one_or_none()
         txin = db.session.query(TXIn).filter_by(txid=transaction.lower()).all()
         txout = db.session.query(TxOut).filter_by(txid=transaction.lower()).all()
         if txin is not None and txout is not None:
             block_height_lookup = db.session.query(Blocks).filter_by(height=check_transaction.block_height).first()
             return render_template('transaction.html',
+                                   coinbase=coinbase,
                                    the_datetime=format_time(block_height_lookup.time),
                                    block_height=check_transaction.block_height,
                                    inputs=txin,

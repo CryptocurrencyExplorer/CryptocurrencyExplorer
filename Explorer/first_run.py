@@ -13,12 +13,11 @@ from config import autodetect_coin, autodetect_config, autodetect_rpc, autodetec
 from config import coin_name, rpcpassword, rpcport, rpcuser
 from config import app_key, csrf_key, database_uri
 from helpers import JSONRPC, JSONRPCException
-from models import db
-from models import Addresses, AddressSummary, Blocks, TXIn, TXs, TxOut
+from models import db, Addresses, AddressSummary, Blocks, CoinbaseTXIn, TXIn, TXs, TxOut
 
 # This is a placeholder to indicate the transaction is empty
 EMPTY = []
-EXPECTED_TABLES = {'addresses', 'address_summary', 'blocks', 'txs', 'txout', 'txin'}
+EXPECTED_TABLES = {'addresses', 'address_summary', 'blocks', 'coinbasetxin', 'txs', 'txout', 'txin'}
 
 
 def create_app():
@@ -58,7 +57,7 @@ def lets_boogy(the_blocks, uniques, cryptocurrency):
                 total_value_out_sans_coinbase = decimal.Decimal(0.0)
                 prev_out_total_out = decimal.Decimal(0.0)
                 prev_out_total_out_with_fees = decimal.Decimal(0.0)
-                total_fees = decimal.Decimal(0.0)
+                block_total_fees = decimal.Decimal(0.0)
                 block_raw_hash = cryptocurrency.getblockhash(block_height)
                 the_block = cryptocurrency.getblock(block_raw_hash)
                 total_cumulative_difficulty += decimal.Decimal(the_block['difficulty'])
@@ -76,7 +75,7 @@ def lets_boogy(the_blocks, uniques, cryptocurrency):
                     # https://grisha.org/blog/2017/12/15/blockchain-and-postgres/
                     try:
                         raw_block_tx = cryptocurrency.getrawtransaction(this_transaction, 1)
-                    except Exception as e:
+                    except JSONRPCException as e:
                         pass
                         # if 'No information available about transaction' in str(e):
                         # TODO - Add something to indicate this transaction is unavailable
@@ -100,21 +99,14 @@ def lets_boogy(the_blocks, uniques, cryptocurrency):
 
                             for vin_num, vin in enumerate(raw_block_tx['vin']):
                                 if number == 0 and vin_num == 0:
-                                    commit_coinbase = TXIn(block_height=block_height,
-                                                           txid=this_transaction,
-                                                           n=0,
-                                                           scriptsig=None,
-                                                           sequence=vin['sequence'],
-                                                           # TODO - This needs pulled from bootstrap
-                                                           # TODO - Witness actually needs supported
-                                                           witness=None,
-                                                           coinbase=True,
-                                                           # TODO
-                                                           spent=False,
-                                                           # TODO
-                                                           prevout_hash='COINBASE',
-                                                           # TODO
-                                                           prevout_n=0)
+                                    commit_coinbase = CoinbaseTXIn(block_height=block_height,
+                                                                   txid=this_transaction,
+                                                                   scriptsig=vin['coinbase'],
+                                                                   sequence=vin['sequence'],
+                                                                   # TODO - This needs pulled from bootstrap
+                                                                   # TODO - Witness actually needs supported
+                                                                   witness=None,
+                                                                   spent=False)
                                     db.session.add(commit_coinbase)
                                 else:
                                     previous_transaction = cryptocurrency.getrawtransaction(vin['txid'], 1)
@@ -132,27 +124,35 @@ def lets_boogy(the_blocks, uniques, cryptocurrency):
                                                                  # TODO - This needs pulled from bootstrap
                                                                  # TODO - Witness actually needs supported
                                                                  witness=None,
-                                                                 coinbase=False,
-                                                                 # TODO
                                                                  spent=False,
-                                                                 # TODO
                                                                  prevout_hash=prev_txid,
-                                                                 # TODO
                                                                  prevout_n=the_prevout_n)
-                                    the_previous_transaction = TXIn.query.filter_by(txid=prev_txid).first()
-                                    the_previous_transaction.spent = True
-                                    db.session.commit()
+                                    cb_prev_tx = db.session.query(CoinbaseTXIn).filter_by(txid=prev_txid).one_or_none()
+                                    if cb_prev_tx is not None:
+                                        cb_prev_tx.spent = True
+                                        db.session.add(cb_prev_tx)
+                                    else:
+                                        the_prev_tx = db.session.query(TXIn).filter_by(txid=prev_txid).first()
+                                        if the_prev_tx is not None:
+                                            the_prev_tx.spent = True
+                                            db.session.add(the_prev_tx)
+                                        else:
+                                            # This shouldn't happen, but just in case..
+                                            first_run_app.logger.error(f"ERROR: Transaction {prev_txid} not found in TXIn or CoinbaseTXIn")
+                                            sys.exit()
                                     db.session.add(commit_transaction_in)
-                        total_fees = prev_out_total_out - total_value_out_sans_coinbase
+                        tx_total_fees = prev_out_total_out - total_value_out_sans_coinbase
+                        block_total_fees += tx_total_fees
                         the_tx = TXs(txid=this_transaction,
                                      block_height=block_height,
                                      size=raw_block_tx['size'],
                                      n=number,
                                      version=raw_block_tx['version'],
                                      locktime=raw_block_tx['locktime'],
+                                     # TODO
                                      total_in=0.0,
                                      total_out=total_value_out,
-                                     fee=total_fees)
+                                     fee=tx_total_fees)
                         db.session.add(the_tx)
                 if block_height == 0:
                     prev_block_hash = uniques['genesis']['prev_hash']
@@ -177,12 +177,12 @@ def lets_boogy(the_blocks, uniques, cryptocurrency):
                                           cumulative_difficulty=total_cumulative_difficulty,
                                           value_out=total_value_out,
                                           transactions=how_many_transactions,
-                                          # TODO
-                                          transaction_fees=decimal.Decimal(1.0))
+                                          transaction_fees=block_total_fees)
                 db.session.add(this_blocks_info)
                 this_block_finished = True
                 if this_block_finished:
                     db.session.commit()
+                    db.session.close()
             except IntegrityError as e:
                 first_run_app.logger.error(f"ERROR: {str(e)}")
                 db.session.rollback()

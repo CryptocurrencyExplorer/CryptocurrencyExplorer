@@ -22,23 +22,29 @@
                 Total in: TODO<br />
                 Number of outputs: {% if outputs|length >= 1 %}{{ outputs|length }}{% endif %} (<a href="#outputs">Jump to outputs</a>)<br />
                 Total out: TODO<br />
-                Size: {{ size }}<br />
+                Size: {{ size }} bytes<br />
                 Fee: {{ fee }}<br />
                 <a href="/api/rawtx/{{ this_transaction }}">Raw transaction</a>
             </p>
             <a id="inputs"><h3>Inputs</h3></a>
             <table class="table">
                 <tr><th>Index</th><th>Previous output</th><th>Amount</th><th>From address</th><th>ScriptSig</th></tr>
-                {% if inputs|length >= 1 %}
+                {% if coinbase is not none %}
+                <tr>
+                    <td><a id="i0">i0</a></td>
+                    <td>Generation</td>
+                    <td>TODO</td>
+                    <td>Generation</td>
+                    <td>{{ vin.scriptsig }}</td>
+                </tr>
                 {% for vin in inputs %}
                 <tr>
                     <td><a id="i{{ loop.index0 }}">{{ loop.index0 }}</a></td>
+                    <td>Generation</td>
                     <td>TODO</td>
-                    <td>TODO</td>
-                    <td>TODO</td>
+                    <td>Generation</td>
                     <td>{{ vin.scriptsig }}</td>
                 </tr>
-               {% endfor %}
                {% else %}
                 <tr>
                     <td><a id="i{{ loop.index0 }}">{{ loop.index0 }}</a></td>
@@ -47,6 +53,7 @@
                     <td>TODO</td>
                     <td>{{ vin.scriptsig }}</td>
                 </tr>
+               {% endfor %}
                {% endif %}
             </table>
             <a id="outputs"><h3>Outputs</h3></a>
@@ -56,8 +63,8 @@
                     <tr>
                     <td><a id="o{{ loop.index0 }}">{{ loop.index0 }}</a></td>
                     <td><a href="">TODO</a></td>
-                    <td>{{ vout.amount }}</td>
-                    <td><a href="">{{ vout.address }}</a></td>
+                    <td>{{ vout.value }}</td>
+                    <td><a href="{{ vout.address }}">{{ vout.address }}</a></td>
                     <td>{{ vout.scriptpubkey }}</td>
                 </tr>
                 {% endfor %}

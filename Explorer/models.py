@@ -132,6 +132,30 @@ class TXs(db.Model):
                     nullable=False)
 
 
+class CoinbaseTXIn(db.Model):
+    __tablename__ = 'coinbasetxin'
+    block_height = db.Column(db.Integer,
+                             unique=False,
+                             nullable=False,
+                             primary_key=True)
+    txid = db.Column(db.String,
+                     unique=False,
+                     nullable=False,
+                     index=True)
+    scriptsig = db.Column(db.String,
+                          unique=False,
+                          nullable=True)
+    sequence = db.Column(db.BIGINT,
+                         unique=False,
+                         nullable=False)
+    witness = db.Column(db.String,
+                        unique=False,
+                        nullable=True)
+    spent = db.Column(db.Boolean,
+                      unique=False,
+                      nullable=True)
+
+
 class TXIn(db.Model):
     __tablename__ = 'txin'
     id = db.Column(db.Integer,
