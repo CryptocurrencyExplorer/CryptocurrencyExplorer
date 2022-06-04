@@ -56,7 +56,7 @@
                     <td><a id="o{{ loop.index0 }}">{{ loop.index0 }}</a></td>
                     <td><a href="">TODO</a></td>
                     <td>{{ vout.value }}</td>
-                    <td><a href="{{ vout.address }}">{{ vout.address }}</a></td>
+                    <td><a href="/address/{{ vout.address }}">{{ vout.address }}</a></td>
                     <td>{{ vout.scriptpubkey }}</td>
                 </tr>
                 {% endfor %}
