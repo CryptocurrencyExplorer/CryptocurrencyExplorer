@@ -31,12 +31,12 @@
                 Nonce: {{ nonce }}<br />
                 Transactions: {{ the_transactions | length }}<br />
                 Value out: {{ value_out }}<br />
-                Transaction Fees: ?<br />
+                Transaction Fees: {{ transaction_fees }}<br />
             </p>
             <h3>Transactions</h3>
-            <table class="table"><tr><th>Transaction</th><th>Fee</th><th>From (amount)</th><th>To (amount)</th></tr>
+            <table class="table"><tr><th>Transaction</th><th>Fee</th><th>Size (kB)</th><th>From (amount)</th><th>To (amount)</th></tr>
                 {% for each in the_transactions %}
-                <tr><td><a href="/tx/{{ each.txid }}">{{ each.txid[0:10] }}...</a></td><td>TODO</td><td>TODO</td><td><a href="../address/ADDRESS">ADDRESS</a>: TODO<br /></td></tr>
+                <tr><td><a href="/tx/{{ each.txid }}">{{ each.txid[0:10] }}...</a></td><td>{{ each.fee }}</td><td>{{ each.size / 1000 }}</td><td>TODO</td><td><a href="../address/ADDRESS">ADDRESS</a>: TODO<br /></td></tr>
                 {% endfor %}
             </table>
 {% endblock %}

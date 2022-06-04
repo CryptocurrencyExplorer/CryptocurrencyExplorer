@@ -241,34 +241,24 @@ def block(block_hash_or_height):
             else:
                 next_block_hash = None
 
-            version = the_block.version
-            merkle_root = the_block.merkleroot
-            the_time = the_block.time
-            formatted_time = format_time(the_block.time)
-            difficulty = the_block.difficulty
-            bits = the_block.bits
-            cumulative_difficulty = the_block.cumulative_difficulty
-            nonce = the_block.nonce
             transactions = db.session.query(TXs).filter_by(block_height=the_block_height).all()
-            value_out = the_block.value_out
-            # TODO
-            transaction_fees = 'PLACEHOLDER'
+            transaction_fees = the_block.transaction_fees
 
             return render_template('block.html',
                                    block_hash=block_hash,
                                    previous_block_hash=previous_block_hash,
                                    next_block_hash=next_block_hash,
                                    block_height=the_block_height,
-                                   version=version,
-                                   merkle_root=merkle_root,
-                                   time=the_time,
-                                   formatted_time=formatted_time,
-                                   difficulty=difficulty,
-                                   bits=bits,
-                                   cumulative_difficulty=cumulative_difficulty,
-                                   nonce=nonce,
+                                   version=the_block.version,
+                                   merkle_root=the_block.merkleroot,
+                                   time=the_block.time,
+                                   formatted_time=format_time(the_block.time),
+                                   difficulty=the_block.difficulty,
+                                   bits=the_block.bits,
+                                   cumulative_difficulty=the_block.cumulative_difficulty,
+                                   nonce=the_block.nonce,
                                    the_transactions=transactions,
-                                   value_out=value_out,
+                                   value_out=the_block.value_out,
                                    transaction_fees=transaction_fees,
                                    # TODO
                                    average_coin_age='?')

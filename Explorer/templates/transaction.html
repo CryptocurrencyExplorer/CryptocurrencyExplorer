@@ -31,23 +31,22 @@
                 <tr><th>Index</th><th>Previous output</th><th>Amount</th><th>From address</th><th>ScriptSig</th></tr>
                 {% if coinbase is not none %}
                 <tr>
-                    <td><a id="i0">i0</a></td>
+                    <td><a id="i0">0</a></td>
                     <td>Generation</td>
                     <td>TODO</td>
                     <td>Generation</td>
                     <td>{{ coinbase.scriptsig }}</td>
                 </tr>
-                {% else %}
+                {% endif %}
                 {% for vin in inputs %}
                 <tr>
-                    <td><a id="i{{ loop.index0 }}">{{ loop.index0 }}</a></td>
+                    {% if coinbase is not none %}<td><a id="i{{ loop.index }}">{{ loop.index }}</a></td>{% else %}<td><a id="i{{ loop.index0 }}">{{ loop.index0 }}</a></td>{% endif %}
                     <td>TODO</td>
                     <td>TODO</td>
                     <td>TODO</td>
                     <td>{{ vin.scriptsig }}</td>
                 </tr>
                 {% endfor %}
-                {% endif %}
             </table>
             <a id="outputs"><h3>Outputs</h3></a>
             <table class="table">
