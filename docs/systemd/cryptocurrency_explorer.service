@@ -1,0 +1,13 @@
+[Unit]
+Description=Cryptocurrency Explorer
+After=network.target
+
+[Service]
+User=change_this
+Group=change_this
+WorkingDirectory=/home/change_this/CryptocurrencyExplorer/Explorer/
+ExecStart=/home/change_this/venv/bin/gunicorn app:application
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

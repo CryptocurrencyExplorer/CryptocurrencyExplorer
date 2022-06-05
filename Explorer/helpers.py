@@ -8,7 +8,7 @@ def format_time(timestamp):
     return datetime.datetime.fromtimestamp(timestamp)
 
 
-def average_age(timestamp, genesis_time):
+def chain_age(timestamp, genesis_time):
     the_timestamp = datetime.datetime.fromtimestamp(timestamp)
     genesis_timestamp = datetime.datetime.fromtimestamp(genesis_time)
     difference = the_timestamp - genesis_timestamp

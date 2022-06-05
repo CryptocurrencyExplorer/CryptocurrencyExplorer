@@ -1,0 +1,16 @@
+[Unit]
+Description=Cryptocurrency Explorer Cron
+After=network.target
+
+[Service]
+User=change_this
+Group=change_this
+WorkingDirectory=/home/change_this/CryptocurrencyExplorer/Explorer
+ExecStart=/home/change_this/venv/bin/python /home/change_this/CryptocurrencyExplorer/Explorer/cronjob.py
+Restart=always
+RestartSec=5
+# If you don't want to log stdout, enable this:
+# StandardOutput=null
+
+[Install]
+WantedBy=multi-user.target

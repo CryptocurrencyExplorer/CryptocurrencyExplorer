@@ -3,6 +3,7 @@
     {% block head %}
     <head>
         <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.ico') }}" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes" />
         <meta http-equiv="content-type" content="text/html; charset=utf-8" />
         <meta name="description" content="View transactions, blocks, addresses, and more." />
         <meta name="keywords" content="{% if config.PROGRAM_NAME is not none %}{{ config.PROGRAM_NAME }}, {% else %}https://github.com/CryptocurrencyExplorer/CryptocurrencyExplorer, {% endif %}transactions, cryptocurrency, crypto, currency{% if config.COIN_NAME != '' %}, {{ config.COIN_NAME }}{% endif %}" />

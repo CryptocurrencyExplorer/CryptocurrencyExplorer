@@ -1,0 +1,13 @@
+[Unit]
+Description=WoodcoinD
+After=network.target
+
+[Service]
+User=change_this
+Group=change_this
+WorkingDirectory=/home/change_this/
+ExecStart=/home/change_this/woodcoind -daemon -conf/home/change_this/.woodcoin/woodcoin.conf -datadir=/home/change_this/.woodcoin/
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

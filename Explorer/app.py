@@ -20,7 +20,7 @@ from wtforms.validators import DataRequired, Length
 import blockchain
 from config import coin_name, rpcpassword, rpcport, rpcuser
 from config import app_key, csrf_key, database_uri, program_name
-from helpers import average_age, format_time, JSONRPC, JSONRPCException
+from helpers import chain_age, format_time, JSONRPC, JSONRPCException
 from models import db, Blocks, CoinbaseTXIn, TXs, TXIn, TxOut
 
 
@@ -197,7 +197,7 @@ def index():
                                        count=count,
                                        hi=hi,
                                        latest_block=latest_block_height,
-                                       average_age=average_age,
+                                       chain_age=chain_age,
                                        genesis_time=genesis_timestamp)
     return render_template('index.html',
                            form=form,
@@ -206,7 +206,7 @@ def index():
                            count=count,
                            hi=hi,
                            latest_block=latest_block_height,
-                           average_age=average_age,
+                           chain_age=chain_age,
                            genesis_time=genesis_timestamp)
 
 
