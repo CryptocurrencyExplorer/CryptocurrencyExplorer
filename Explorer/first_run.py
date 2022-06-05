@@ -268,7 +268,7 @@ if __name__ == '__main__':
         detect_flask_config()
     try:
         rpcurl = f"http://127.0.0.1:{rpcport}"
-        crypto_currency = JSONRPC(rpcurl, rpcuser, rpcpassword, '')
+        crypto_currency = JSONRPC(rpcurl, rpcuser, rpcpassword)
     except(JSONRPCException, ValueError):
         first_run_app.logger.error("One or all of these is wrong: rpcuser/rpcpassword/rpcport. Fix this in config.py")
         sys.exit()
@@ -279,7 +279,9 @@ if __name__ == '__main__':
         detect_tables()
 
     most_recent_block = crypto_currency.getblockcount()
-
+    if most_recent_block is None:
+        first_run_app.logger.error("Doesn't look like you have the daemon running. Fix this.")
+        sys.exit()
     try:
         most_recent_stored_block = db.session.query(Blocks).order_by(desc('height')).first().height
     except AttributeError:

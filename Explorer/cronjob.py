@@ -189,7 +189,7 @@ if __name__ == '__main__':
     cronjob.app_context().push()
 
     rpcurl = f"http://127.0.0.1:{rpcport}"
-    crypto_currency = JSONRPC(rpcurl, rpcuser, rpcpassword, '')
+    crypto_currency = JSONRPC(rpcurl, rpcuser, rpcpassword)
 
     most_recent_block = crypto_currency.getblockcount()
 

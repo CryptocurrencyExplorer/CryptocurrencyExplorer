@@ -7,7 +7,7 @@ User=change_this
 Group=change_this
 WorkingDirectory=/home/change_this/CryptocurrencyExplorer/Explorer/
 ExecStart=/home/change_this/venv/bin/gunicorn app:application
-Restart=always
+Restart=on-failure
 
 [Install]
 WantedBy=multi-user.target

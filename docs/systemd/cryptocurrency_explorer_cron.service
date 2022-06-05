@@ -5,9 +5,10 @@ After=network.target
 [Service]
 User=change_this
 Group=change_this
+Type=simple
 WorkingDirectory=/home/change_this/CryptocurrencyExplorer/Explorer
 ExecStart=/home/change_this/venv/bin/python /home/change_this/CryptocurrencyExplorer/Explorer/cronjob.py
-Restart=always
+Restart=on-failure
 RestartSec=5
 # If you don't want to log stdout, enable this:
 # StandardOutput=null
