@@ -9,9 +9,9 @@ Type=simple
 WorkingDirectory=/home/change_this/CryptocurrencyExplorer/Explorer
 ExecStart=/home/change_this/venv/bin/python /home/change_this/CryptocurrencyExplorer/Explorer/cronjob.py
 Restart=always
-RestartSec=5
-# If you don't want to log stdout, enable this:
-# StandardOutput=null
+RestartSec=10
+# If you want to log stdout, disable this:
+StandardOutput=null
 
 [Install]
 WantedBy=multi-user.target
