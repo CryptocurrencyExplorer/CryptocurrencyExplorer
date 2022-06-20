@@ -147,6 +147,7 @@ def lets_boogy(the_blocks, uniques, cryptocurrency):
                                             sys.exit()
                                     db.session.add(commit_transaction_in)
                             tx_total_fees = prev_out_total_out - total_value_out_sans_coinbase
+                            outstanding_coins -= tx_total_fees
                             block_total_fees += tx_total_fees
                             the_tx = TXs(txid=this_transaction,
                                          block_height=block_height,
