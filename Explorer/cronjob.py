@@ -141,19 +141,22 @@ def lets_boogy(the_blocks, uniques, cryptocurrency):
                                             f"ERROR: Transaction {prev_txid} not found in TXIn or CoinbaseTXIn")
                                         sys.exit()
                                 db.session.add(commit_transaction_in)
-                    tx_total_fees = prev_out_total_out - total_value_out_sans_coinbase
-                    block_total_fees += tx_total_fees
-                    the_tx = TXs(txid=this_transaction,
-                                 block_height=block_height,
-                                 size=raw_block_tx['size'],
-                                 n=number,
-                                 version=raw_block_tx['version'],
-                                 locktime=raw_block_tx['locktime'],
-                                 # TODO
-                                 total_in=0.0,
-                                 total_out=total_value_out,
-                                 fee=tx_total_fees)
-                    db.session.add(the_tx)
+                        tx_total_fees = prev_out_total_out - total_value_out_sans_coinbase
+                        outstanding_coins -= tx_total_fees
+                        block_total_fees += tx_total_fees
+                        the_tx = TXs(txid=this_transaction,
+                                     block_height=block_height,
+                                     size=raw_block_tx['size'],
+                                     n=number,
+                                     version=raw_block_tx['version'],
+                                     locktime=raw_block_tx['locktime'],
+                                     # TODO
+                                     total_in=0.0,
+                                     total_out=total_value_out,
+                                     fee=tx_total_fees)
+                        db.session.add(the_tx)
+                        prev_out_total_out = decimal.Decimal(0.0)
+                        total_value_out_sans_coinbase = decimal.Decimal(0.0)
             if block_height == 0:
                 prev_block_hash = uniques['genesis']['prev_hash']
                 next_block_hash = the_block['nextblockhash']
@@ -187,7 +190,8 @@ def lets_boogy(the_blocks, uniques, cryptocurrency):
         except IntegrityError as e:
             cronjob.logger.error(f"ERROR: {str(e)}")
             db.session.rollback()
-        cronjob.logger.info(f"committed block {block_height}")
+        else:
+            cronjob.logger.info(f"committed block {block_height}")
 
 
 if __name__ == '__main__':
