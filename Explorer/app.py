@@ -12,6 +12,7 @@ from flask import redirect, request, url_for, render_template, session
 from flask.json import JSONEncoder
 from flask_wtf import FlaskForm
 from flask_wtf.csrf import CSRFError, CSRFProtect
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.pool import NullPool
 from sqlalchemy.sql import desc
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -84,6 +85,13 @@ def create_app(the_csrf):
 csrf = CSRFProtect()
 application, coin_uniques, cryptocurrency = create_app(csrf)
 application.app_context().push()
+
+
+# When first_run is executing, this needs to happen if we want to also view the explorer
+# Not sure if I'm keeping this, or if this is the best way to approach this.
+@application.errorhandler(SQLAlchemyError)
+def sqlalchemy_error():
+    db.session.rollback()
 
 
 @application.before_request
@@ -258,6 +266,7 @@ def block(block_hash_or_height):
                                    cumulative_difficulty=the_block.cumulative_difficulty,
                                    nonce=the_block.nonce,
                                    the_transactions=transactions,
+                                   outstanding=the_block.outstanding,
                                    value_out=the_block.value_out,
                                    transaction_fees=transaction_fees,
                                    # TODO

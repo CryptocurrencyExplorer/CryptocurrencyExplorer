@@ -6,7 +6,7 @@ from logging.handlers import RotatingFileHandler
 from flask import Flask
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.sql import desc
-from sqlalchemy.exc import OperationalError, IntegrityError
+from sqlalchemy.exc import IntegrityError, OperationalError
 import blockchain
 from blockchain import SUPPORTED_COINS
 from config import autodetect_coin, autodetect_config, autodetect_rpc, autodetect_tables
@@ -41,9 +41,12 @@ def process_block(current_item):
 def lets_boogy(the_blocks, uniques, cryptocurrency):
     if the_blocks[0] == 0:
         total_cumulative_difficulty = decimal.Decimal(0.0)
+        outstanding_coins = decimal.Decimal(0.0)
     else:
         total_cumulative_difficulty = db.session.query(Blocks).order_by(
                                       desc('cumulative_difficulty')).first().cumulative_difficulty
+        outstanding_coins = db.session.query(Blocks).order_by(
+                            desc('outstanding')).first().outstanding
         current_block = db.session.query(Blocks).order_by(desc('height')).first()
         if current_block.nexthash == 'PLACEHOLDER':
             next_block_hash = cryptocurrency.getblockhash(current_block.height + 1)
@@ -87,6 +90,8 @@ def lets_boogy(the_blocks, uniques, cryptocurrency):
                             for vout in raw_block_tx['vout']:
                                 if number != 0:
                                     total_value_out_sans_coinbase += vout['value']
+                                else:
+                                    outstanding_coins += vout['value']
                                 total_value_out += vout['value']
                                 commit_transaction_out = TxOut(txid=this_transaction,
                                                                n=vout['n'],
@@ -141,19 +146,21 @@ def lets_boogy(the_blocks, uniques, cryptocurrency):
                                             first_run_app.logger.error(f"ERROR: Transaction {prev_txid} not found in TXIn or CoinbaseTXIn")
                                             sys.exit()
                                     db.session.add(commit_transaction_in)
-                        tx_total_fees = prev_out_total_out - total_value_out_sans_coinbase
-                        block_total_fees += tx_total_fees
-                        the_tx = TXs(txid=this_transaction,
-                                     block_height=block_height,
-                                     size=raw_block_tx['size'],
-                                     n=number,
-                                     version=raw_block_tx['version'],
-                                     locktime=raw_block_tx['locktime'],
-                                     # TODO
-                                     total_in=0.0,
-                                     total_out=total_value_out,
-                                     fee=tx_total_fees)
-                        db.session.add(the_tx)
+                            tx_total_fees = prev_out_total_out - total_value_out_sans_coinbase
+                            block_total_fees += tx_total_fees
+                            the_tx = TXs(txid=this_transaction,
+                                         block_height=block_height,
+                                         size=raw_block_tx['size'],
+                                         n=number,
+                                         version=raw_block_tx['version'],
+                                         locktime=raw_block_tx['locktime'],
+                                         # TODO
+                                         total_in=0.0,
+                                         total_out=total_value_out,
+                                         fee=tx_total_fees)
+                            db.session.add(the_tx)
+                            prev_out_total_out = decimal.Decimal(0.0)
+                            total_value_out_sans_coinbase = decimal.Decimal(0.0)
                 if block_height == 0:
                     prev_block_hash = uniques['genesis']['prev_hash']
                     next_block_hash = the_block['nextblockhash']
@@ -175,6 +182,7 @@ def lets_boogy(the_blocks, uniques, cryptocurrency):
                                           size=the_block['size'],
                                           difficulty=decimal.Decimal(the_block['difficulty']),
                                           cumulative_difficulty=total_cumulative_difficulty,
+                                          outstanding=outstanding_coins,
                                           value_out=total_value_out,
                                           transactions=how_many_transactions,
                                           transaction_fees=block_total_fees)

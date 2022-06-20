@@ -35,9 +35,12 @@ def create_app():
 def lets_boogy(the_blocks, uniques, cryptocurrency):
     if the_blocks[0] == 0:
         total_cumulative_difficulty = decimal.Decimal(0.0)
+        outstanding_coins = decimal.Decimal(0.0)
     else:
         total_cumulative_difficulty = db.session.query(Blocks).order_by(
                                       desc('cumulative_difficulty')).first().cumulative_difficulty
+        outstanding_coins = db.session.query(Blocks).order_by(
+                            desc('outstanding')).first().outstanding
         current_block = db.session.query(Blocks).order_by(desc('height')).first()
         if current_block.nexthash == 'PLACEHOLDER':
             next_block_hash = cryptocurrency.getblockhash(current_block.height + 1)
@@ -81,6 +84,8 @@ def lets_boogy(the_blocks, uniques, cryptocurrency):
                         for vout in raw_block_tx['vout']:
                             if number != 0:
                                 total_value_out_sans_coinbase += vout['value']
+                            else:
+                                outstanding_coins += vout['value']
                             total_value_out += vout['value']
                             commit_transaction_out = TxOut(txid=this_transaction,
                                                            n=vout['n'],
@@ -170,6 +175,7 @@ def lets_boogy(the_blocks, uniques, cryptocurrency):
                                       size=the_block['size'],
                                       difficulty=decimal.Decimal(the_block['difficulty']),
                                       cumulative_difficulty=total_cumulative_difficulty,
+                                      outstanding=outstanding_coins,
                                       value_out=total_value_out,
                                       transactions=how_many_transactions,
                                       transaction_fees=block_total_fees)

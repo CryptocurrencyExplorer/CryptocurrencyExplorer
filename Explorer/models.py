@@ -87,6 +87,9 @@ class Blocks(db.Model):
     cumulative_difficulty = db.Column(db.Numeric,
                                       unique=False,
                                       nullable=False)
+    outstanding = db.Column(db.Numeric,
+                            unique=False,
+                            nullable=False)
     value_out = db.Column(db.Numeric,
                           unique=False,
                           nullable=False)
