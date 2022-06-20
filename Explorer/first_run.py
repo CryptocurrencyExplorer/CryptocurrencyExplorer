@@ -69,13 +69,7 @@ def lets_boogy(the_blocks, uniques, cryptocurrency):
 
                 # Probably better to just take the latest block's height and minus this block's height to get this
                 # block_confirmations = cryptocurrency.getblockcount() + 1 - block_height
-
-                # If there's more than one transaction, we need to calculate fees.
-                # Since this involves inputs - outputs, the coinbase is done last.
                 for number, this_transaction in enumerate(raw_block_transactions):
-                    # "The tx_id column is the transaction to which this output belongs,
-                    # n is the position within the output list."
-                    # https://grisha.org/blog/2017/12/15/blockchain-and-postgres/
                     try:
                         raw_block_tx = cryptocurrency.getrawtransaction(this_transaction, 1)
                     except JSONRPCException as e:
