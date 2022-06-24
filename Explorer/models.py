@@ -6,24 +6,23 @@ db = SQLAlchemy()
 
 class Addresses(db.Model):
     __tablename__ = 'addresses'
-    id = db.Column(db.Integer,
-                   primary_key=True)
     address = db.Column(db.String,
                         unique=False,
                         nullable=False,
-                        index=True)
+                        primary_key=True)
     amount = db.Column(db.Numeric,
                        unique=False,
                        nullable=False)
+    n = db.Column(db.Integer,
+                  unique=False,
+                  nullable=False)
     in_block = db.Column(db.Integer,
                          unique=False,
                          nullable=False)
     transaction = db.Column(db.String,
+                            index=True,
                             unique=False,
                             nullable=False)
-    datetime = db.Column(db.Integer,
-                         unique=False,
-                         nullable=False)
 
 
 class AddressSummary(db.Model):
@@ -122,9 +121,6 @@ class TXs(db.Model):
                         unique=False,
                         nullable=False)
     locktime = db.Column(db.Integer,
-                         unique=False,
-                         nullable=False)
-    total_in = db.Column(db.Numeric,
                          unique=False,
                          nullable=False)
     total_out = db.Column(db.Numeric,

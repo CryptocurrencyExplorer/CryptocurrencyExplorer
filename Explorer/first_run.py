@@ -87,11 +87,37 @@ def lets_boogy(the_blocks, uniques, cryptocurrency):
                                 else:
                                     outstanding_coins += vout['value']
                                 total_value_out += vout['value']
+                                the_address = vout['scriptPubKey']['addresses'][0]
+
+                                commit_address_transaction = Addresses(address=the_address,
+                                                                       amount=total_value_out,
+                                                                       n=vout['n'],
+                                                                       in_block=block_height,
+                                                                       transaction=this_transaction)
+                                db.session.add(commit_address_transaction)
+
+                                address_lookup = db.session.query(AddressSummary).filter_by(
+                                                 address=the_address).first_or_none()
+                                if address_lookup is None:
+                                    AddressSummary(address=the_address,
+                                                   balance=total_value_out,
+                                                   transactions_in=1,
+                                                   received=total_value_out,
+                                                   transactions_out=0,
+                                                   sent=0.00000000)
+                                else:
+                                    address_lookup.balance = "TODO"
+                                    address_lookup.transactions_in = "TODO"
+                                    address_lookup.received = "TODO"
+                                    address_lookup.transaction_out = "TODO"
+                                    address_lookup.sent = "TODO"
+                                    db.session.add(address_lookup)
+
                                 commit_transaction_out = TxOut(txid=this_transaction,
                                                                n=vout['n'],
                                                                value=vout['value'],
                                                                scriptpubkey=vout['scriptPubKey']['asm'],
-                                                               address=vout['scriptPubKey']['addresses'][0],
+                                                               address=the_address,
                                                                linked_txid=None,
                                                                spent=False)
                                 db.session.add(commit_transaction_out)
@@ -149,8 +175,6 @@ def lets_boogy(the_blocks, uniques, cryptocurrency):
                                          n=number,
                                          version=raw_block_tx['version'],
                                          locktime=raw_block_tx['locktime'],
-                                         # TODO
-                                         total_in=0.0,
                                          total_out=total_value_out,
                                          fee=tx_total_fees)
                             db.session.add(the_tx)

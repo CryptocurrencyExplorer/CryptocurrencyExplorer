@@ -20,6 +20,13 @@ def format_size(tx_size):
     return tx_size / 1000.0
 
 
+def format_fee(fee):
+    if fee == 0:
+        return '0.00000000'
+    else:
+        return format(fee, '.8f')
+
+
 class JSONRPC(object):
     __id_count = 0
 

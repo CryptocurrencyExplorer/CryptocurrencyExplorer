@@ -23,7 +23,7 @@
                 Number of outputs: {% if outputs|length >= 1 %}{{ outputs|length }}{% endif %} (<a href="#outputs">Jump to outputs</a>)<br />
                 Total out: TODO<br />
                 Size: {{ size }} bytes<br />
-                Fee: {% if fee == 0 %}0.00000000{% else %}{{ fee }}{% endif %}<br />
+                Fee: {{ fee }}<br />
                 <a href="/api/rawtx/{{ this_transaction }}">Raw transaction</a>
             </p>
             <a id="inputs"><h3>Inputs</h3></a>

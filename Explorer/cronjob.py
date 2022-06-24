@@ -81,11 +81,20 @@ def lets_boogy(the_blocks, uniques, cryptocurrency):
                             else:
                                 outstanding_coins += vout['value']
                             total_value_out += vout['value']
+                            the_address = vout['scriptPubKey']['addresses'][0]
+
+                            commit_address_transaction = Addresses(address=the_address,
+                                                                   amount=total_value_out,
+                                                                   n=vout['n'],
+                                                                   in_block=block_height,
+                                                                   transaction=this_transaction)
+                            db.session.add(commit_address_transaction)
+
                             commit_transaction_out = TxOut(txid=this_transaction,
                                                            n=vout['n'],
                                                            value=vout['value'],
                                                            scriptpubkey=vout['scriptPubKey']['asm'],
-                                                           address=vout['scriptPubKey']['addresses'][0],
+                                                           address=the_address,
                                                            linked_txid=None,
                                                            spent=False)
                             db.session.add(commit_transaction_out)
@@ -144,8 +153,6 @@ def lets_boogy(the_blocks, uniques, cryptocurrency):
                                      n=number,
                                      version=raw_block_tx['version'],
                                      locktime=raw_block_tx['locktime'],
-                                     # TODO
-                                     total_in=0.0,
                                      total_out=total_value_out,
                                      fee=tx_total_fees)
                         db.session.add(the_tx)

@@ -21,7 +21,7 @@ from wtforms.validators import DataRequired, Length
 import blockchain
 from config import coin_name, rpcpassword, rpcport, rpcuser
 from config import app_key, csrf_key, database_uri, program_name
-from helpers import chain_age, format_time, JSONRPC, JSONRPCException
+from helpers import chain_age, format_fee, format_time, JSONRPC, JSONRPCException
 from models import db, Blocks, CoinbaseTXIn, TXs, TXIn, TxOut
 
 
@@ -90,7 +90,7 @@ application.app_context().push()
 # When first_run is executing, this needs to happen if we want to also view the explorer
 # Not sure if I'm keeping this, or if this is the best way to approach this.
 @application.errorhandler(SQLAlchemyError)
-def sqlalchemy_error():
+def sqlalchemy_error(error):
     db.session.rollback()
 
 
@@ -250,7 +250,6 @@ def block(block_hash_or_height):
                 next_block_hash = None
 
             transactions = db.session.query(TXs).filter_by(block_height=the_block_height).all()
-            transaction_fees = the_block.transaction_fees
 
             return render_template('block.html',
                                    block_hash=block_hash,
@@ -268,7 +267,7 @@ def block(block_hash_or_height):
                                    the_transactions=transactions,
                                    outstanding=the_block.outstanding,
                                    value_out=the_block.value_out,
-                                   transaction_fees=transaction_fees,
+                                   transaction_fees=format_fee(the_block.transaction_fees),
                                    # TODO
                                    average_coin_age='?')
         else:
@@ -300,7 +299,7 @@ def tx(transaction):
                                    inputs=txin,
                                    outputs=txout,
                                    this_transaction=transaction.lower(),
-                                   fee=check_transaction.fee,
+                                   fee=format_fee(check_transaction.fee),
                                    size=check_transaction.size)
         else:
             return render_template('404.html', error="Not a valid transaction"), 404
