@@ -83,44 +83,47 @@ def lets_boogy(the_blocks, uniques, cryptocurrency):
                         else:
                             for vout in raw_block_tx['vout']:
                                 if number != 0:
+                                    the_address = vout['scriptPubKey']['addresses'][0]
                                     total_value_out_sans_coinbase += vout['value']
+                                    address_lookup = db.session.query(Addresses).filter_by(
+                                                     address=the_address).one_or_none()
+                                    if address_lookup is None:
+                                        commit_address_transaction = Addresses(address=the_address,
+                                                                               amount=vout['value'],
+                                                                               n=vout['n'],
+                                                                               in_block=block_height,
+                                                                               transaction=this_transaction)
+                                        db.session.add(commit_address_transaction)
+
+                                    address_summary_lookup = db.session.query(AddressSummary).filter_by(
+                                                             address=the_address).one_or_none()
+                                    if address_summary_lookup is None:
+                                        address_summary = AddressSummary(address=the_address,
+                                                                         balance=vout['value'],
+                                                                         transactions_in=1,
+                                                                         received=decimal.Decimal(0.00000000),
+                                                                         transactions_out=0,
+                                                                         sent=0.00000000)
+                                        db.session.add(address_summary)
+                                    else:
+                                        # TODO - all of this
+                                        address_summary_lookup.balance = decimal.Decimal(0.00000000)
+                                        address_summary_lookup.transactions_in = 1
+                                        address_summary_lookup.received = decimal.Decimal(0.00000000)
+                                        address_summary_lookup.transaction_out = 1
+                                        address_summary_lookup.sent = 1
+                                        db.session.commit()
+                                    commit_transaction_out = TxOut(txid=this_transaction,
+                                                                   n=vout['n'],
+                                                                   value=vout['value'],
+                                                                   scriptpubkey=vout['scriptPubKey']['asm'],
+                                                                   address=the_address,
+                                                                   linked_txid=None,
+                                                                   spent=False)
+                                    db.session.add(commit_transaction_out)
                                 else:
                                     outstanding_coins += vout['value']
                                 total_value_out += vout['value']
-                                the_address = vout['scriptPubKey']['addresses'][0]
-
-                                commit_address_transaction = Addresses(address=the_address,
-                                                                       amount=total_value_out,
-                                                                       n=vout['n'],
-                                                                       in_block=block_height,
-                                                                       transaction=this_transaction)
-                                db.session.add(commit_address_transaction)
-
-                                address_lookup = db.session.query(AddressSummary).filter_by(
-                                                 address=the_address).first_or_none()
-                                if address_lookup is None:
-                                    AddressSummary(address=the_address,
-                                                   balance=total_value_out,
-                                                   transactions_in=1,
-                                                   received=total_value_out,
-                                                   transactions_out=0,
-                                                   sent=0.00000000)
-                                else:
-                                    address_lookup.balance = "TODO"
-                                    address_lookup.transactions_in = "TODO"
-                                    address_lookup.received = "TODO"
-                                    address_lookup.transaction_out = "TODO"
-                                    address_lookup.sent = "TODO"
-                                    db.session.add(address_lookup)
-
-                                commit_transaction_out = TxOut(txid=this_transaction,
-                                                               n=vout['n'],
-                                                               value=vout['value'],
-                                                               scriptpubkey=vout['scriptPubKey']['asm'],
-                                                               address=the_address,
-                                                               linked_txid=None,
-                                                               spent=False)
-                                db.session.add(commit_transaction_out)
 
                             for vin_num, vin in enumerate(raw_block_tx['vin']):
                                 if number == 0 and vin_num == 0:

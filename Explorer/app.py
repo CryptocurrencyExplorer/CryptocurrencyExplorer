@@ -267,7 +267,8 @@ def block(block_hash_or_height):
                                    the_transactions=transactions,
                                    outstanding=the_block.outstanding,
                                    value_out=the_block.value_out,
-                                   transaction_fees=format_fee(the_block.transaction_fees),
+                                   formatted_transaction_fees=format_fee(the_block.transaction_fees),
+                                   transaction_fees=the_block.transaction_fees,
                                    # TODO
                                    average_coin_age='?')
         else:
