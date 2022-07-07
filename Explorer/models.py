@@ -126,6 +126,9 @@ class TXs(db.Model):
     total_out = db.Column(db.Numeric,
                           unique=False,
                           nullable=False)
+    total_in = db.Column(db.Numeric,
+                         unique=False,
+                         nullable=False)
     fee = db.Column(db.Numeric,
                     unique=False,
                     nullable=False)

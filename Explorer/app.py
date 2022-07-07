@@ -299,6 +299,8 @@ def tx(transaction):
                                    block_height=check_transaction.block_height,
                                    inputs=txin,
                                    outputs=txout,
+                                   total_out=check_transaction.total_out,
+                                   total_in=check_transaction.total_in,
                                    this_transaction=transaction.lower(),
                                    fee=format_fee(check_transaction.fee),
                                    size=check_transaction.size)
