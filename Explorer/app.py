@@ -226,7 +226,7 @@ def redirect_to_address():
     return redirect(url_for('address', the_address="WeHonorTheForestsAndTheTrees4pPXTQ"))
 
 
-@application.get("/block/<the_address>/")
+@application.get("/address/<the_address>/")
 def address(the_address):
     # TODO
 
