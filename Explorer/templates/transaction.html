@@ -37,7 +37,7 @@
                     <td>Generation</td>
                     <td>{{ coinbase.scriptsig }}</td>
                 </tr>
-                {% endif %}
+                {% else %}
                 {% for vin in inputs %}
                 <tr>
                     {% if coinbase is not none %}<td><a id="i{{ loop.index }}">{{ loop.index }}</a></td>{% else %}<td><a id="i{{ loop.index0 }}">{{ loop.index0 }}</a></td>{% endif %}
@@ -47,6 +47,7 @@
                     <td>{{ vin.scriptsig }}</td>
                 </tr>
                 {% endfor %}
+                {% endif %}
             </table>
             <a id="outputs"><h3>Outputs</h3></a>
             <table class="table">

@@ -22,7 +22,8 @@
         <div class="container">
             <h1 class=woodcenter><a href="/">
                 <img src="{{ url_for('static', filename='images/cryptocurrency.svg') }}" alt="{% if config.COIN_NAME != '' %}{{ config.COIN_NAME }}{% else %}A really cool cryptocurrency{% endif %} logo" title="{% if config.COIN_NAME != '' %}{{ config.COIN_NAME }}{% else %}A really cool cryptocurrency{% endif %} logo" width="52px" height="52px"/></a><a href="/"></a> {% block additional_text %}{% endblock %}
-            </h1>{% endblock %}
+            </h1>
+        {% endblock %}
             {% block the_form %}
             <div class="formtest">
                 <form method="post">

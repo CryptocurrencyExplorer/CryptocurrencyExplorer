@@ -21,7 +21,7 @@ from wtforms.validators import DataRequired, Length
 import blockchain
 from config import coin_name, rpcpassword, rpcport, rpcuser
 from config import app_key, csrf_key, database_uri, program_name
-from helpers import chain_age, format_fee, format_time, JSONRPC, JSONRPCException
+from helpers import chain_age, format_eight_zeroes, format_time, JSONRPC, JSONRPCException
 from models import db, Blocks, CoinbaseTXIn, TXs, TXIn, TxOut
 
 
@@ -62,6 +62,7 @@ def create_app(the_csrf):
     #
     # prep_application.config['SESSION_COOKIE_HTTPONLY'] = True
     prep_application.config['SESSION_COOKIE_NAME'] = 'csrf_token'
+    prep_application.config['SESSION_COOKIE_SAMESITE'] = 'Strict'
     # prep_application.config['SESSION_COOKIE_SECURE'] = True
     prep_application.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     prep_application.config['SQLALCHEMY_DATABASE_URI'] = database_uri
@@ -69,7 +70,8 @@ def create_app(the_csrf):
     prep_application.config['VERSION'] = 0.8
     prep_application.config['WTF_CSRF_SECRET_KEY'] = csrf_key
     prep_application.jinja_env.trim_blocks = True
-    prep_application.jinja_env.lstrip_blocks = True
+    prep_application.jinja_env.lstrip_blocks = False
+    prep_application.jinja_env.enable_async = True
     prep_application.wsgi_app = ProxyFix(prep_application.wsgi_app, x_proto=1, x_host=1)
     db.init_app(prep_application)
     the_csrf.init_app(prep_application)
@@ -218,6 +220,16 @@ def index():
                            genesis_time=genesis_timestamp)
 
 
+@application.get("/address/")
+def redirect_to_address():
+    # TODO - This address should be pulled from bootstrap, considering this is very specific.
+    return redirect(url_for('address', the_address="WeHonorTheForestsAndTheTrees4pPXTQ"))
+
+
+@application.get("/block/<the_address>/")
+def address(the_address):
+    # TODO
+
 @application.get("/block/")
 def redirect_to_block():
     return redirect(url_for('block', block_hash_or_height="0"))
@@ -267,7 +279,7 @@ def block(block_hash_or_height):
                                    the_transactions=transactions,
                                    outstanding=the_block.outstanding,
                                    value_out=the_block.value_out,
-                                   formatted_transaction_fees=format_fee(the_block.transaction_fees),
+                                   formatted_transaction_fees=format_eight_zeroes(the_block.transaction_fees),
                                    transaction_fees=the_block.transaction_fees,
                                    # TODO
                                    average_coin_age='?')
@@ -299,10 +311,10 @@ def tx(transaction):
                                    block_height=check_transaction.block_height,
                                    inputs=txin,
                                    outputs=txout,
-                                   total_out=check_transaction.total_out,
-                                   total_in=check_transaction.total_in,
+                                   total_out=format_eight_zeroes(check_transaction.total_out),
+                                   total_in=format_eight_zeroes(check_transaction.total_in),
                                    this_transaction=transaction.lower(),
-                                   fee=format_fee(check_transaction.fee),
+                                   fee=format_eight_zeroes(check_transaction.fee),
                                    size=check_transaction.size)
         else:
             return render_template('404.html', error="Not a valid transaction"), 404
