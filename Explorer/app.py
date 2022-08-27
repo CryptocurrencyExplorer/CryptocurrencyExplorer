@@ -12,6 +12,7 @@ from flask import redirect, request, url_for, render_template, session
 from flask.json import JSONEncoder
 from flask_wtf import FlaskForm
 from flask_wtf.csrf import CSRFError, CSRFProtect
+from sqlalchemy import func
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.pool import NullPool
 from sqlalchemy.sql import desc
@@ -22,7 +23,7 @@ import blockchain
 from config import coin_name, rpcpassword, rpcport, rpcuser
 from config import app_key, csrf_key, database_uri, program_name
 from helpers import chain_age, format_eight_zeroes, format_time, JSONRPC, JSONRPCException
-from models import db, Blocks, CoinbaseTXIn, TXs, TXIn, TxOut
+from models import db, Blocks, CoinbaseTXIn, TXs, TXIn, TxOut, Addresses
 
 
 class DecimalEncoder(JSONEncoder):
@@ -229,6 +230,15 @@ def redirect_to_address():
 @application.get("/address/<the_address>/")
 def address(the_address):
     # TODO
+    address_lookup = db.session.query(Addresses).filter_by()
+    if address_lookup is None:
+        return render_template('404.html', error="Not a valid address"), 404
+    else:
+        # TODO
+        db.session.query()
+        # TODO
+        return render_template('address.html')
+
 
 @application.get("/block/")
 def redirect_to_block():

@@ -6,20 +6,22 @@ Address{% block title %}super(){% endblock %}
         {% block body %}
         <div class="container">
             <h1 class=woodcenter><a href="/">
-                <img src="https://raw.githubusercontent.com/woodcoin-core/woodcoin-explorer/master/Abe/htdocs/logo32.png" alt="Woodcoin logo" title="Woodcoin logo"/></a>
+                <img src="https://raw.githubusercontent.com/woodcoin-core/woodcoin-explorer/master/Abe/htdocs/logo32.png" alt="{{ config.COIN_NAME }} logo" title="{{ config.COIN_NAME }} logo"/></a>
                 Address {{ the_address }}
             </h1>
             <p>
                 Balance: {{ total_balance }} {{ which_currency }}<br />
                 Transactions in: {{ total_transactions_in }}<br />
-                Received: {{  total_received }} {{ which_currency }}<br />
+                Received: {{ total_received }} {{ which_currency }}<br />
                 Transactions out: {{ total_transactions_out }}<br />
                 Sent: {{ total_sent }} {{ which_currency }}<br />
             </p>
             <h3>Transactions</h3>
             <table class="table addrhist">
-                <tr><th>Transaction</th><th>Block</th><th>Time (UTC)</th><th>Amount</th><th>Balance</th><th>Currency</th></tr>{% for each in address_transactions %}
-                <tr class="direct"><td class="tx"><a href="{{ tx_url }}">{{ tx_shortened }}</a></td><td class="block"><a href="{{ block_url }}">{{ block_height }}</a></td><td class="time">{{ block_time }}</td><td class="amount">{{ amount_in_this_transaction }}</td><td class="balance">{{ balance_in_this_transaction }}</td><td class="currency">{{ which_currency }}</td></tr>{% endfor %}
+                <tr><th>Transaction</th><th>Block</th><th>Time (UTC)</th><th>Amount</th><th>Balance</th><th>Currency</th></tr>
+                {% for each in address_transactions %}
+                <tr class="direct"><td class="tx"><a href="{{ tx_url }}">{{ tx_shortened }}</a></td><td class="block"><a href="{{ block_url }}">{{ block_height }}</a></td><td class="time">{{ block_time }}</td><td class="amount">{{ amount_in_this_transaction }}</td><td class="balance">{{ balance_in_this_transaction }}</td><td class="currency">{{ which_currency }}</td></tr>
+                {% endfor %}
             </table>
         </div>
         {% endblock %}
