@@ -223,8 +223,10 @@ def index():
 
 @application.get("/address/")
 def redirect_to_address():
-    # TODO - This address should be pulled from bootstrap, considering this is very specific.
-    return redirect(url_for('address', the_address="WeHonorTheForestsAndTheTrees4pPXTQ"))
+    if coin_uniques['burn_address'] is not None:
+        return redirect(url_for('address', the_address=coin_uniques['burn_address']))
+    else:
+        return redirect(url_for('address', the_address='INVALIDADDRESS'))
 
 
 @application.get("/address/<the_address>/")

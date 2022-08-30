@@ -1,4 +1,3 @@
-import decimal
 import logging
 import sys
 import click
@@ -7,6 +6,7 @@ from flask import Flask
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.sql import desc
 from sqlalchemy.exc import IntegrityError, OperationalError
+from sqlalchemy.orm import close_all_sessions
 import blockchain
 from blockchain import SUPPORTED_COINS
 from config import autodetect_coin, autodetect_config, autodetect_rpc, autodetect_tables
@@ -15,8 +15,6 @@ from config import app_key, csrf_key, database_uri
 from helpers import pre_boogie, bulk_of_first_run_or_cron, JSONRPC, JSONRPCException
 from models import db, Blocks
 
-# This is a placeholder to indicate the transaction is empty
-EMPTY = []
 EXPECTED_TABLES = {'addresses', 'address_summary', 'blocks', 'coinbasetxin', 'txs', 'txout', 'txin'}
 
 
@@ -153,14 +151,16 @@ if __name__ == '__main__':
     except OperationalError as exception:
         if 'database' in str(exception) and 'does not exist' in str(exception):
             first_run_app.logger.info("You'll need to follow the documentation to create the database.")
-            first_run_app.logger.info("This isn't possible through Flask right now (issue \#15 in the Github repo).")
+            first_run_app.logger.info("This isn't possible through Flask right now (issue #15 in the Github repo).")
     else:
         while True:
             user_input = input('(C)ontinue, (D)rop all, or (E)xit?: ').lower()
             if user_input in ['d', 'drop', 'drop all']:
                 with first_run_app.app_context():
+                    # https://docs.sqlalchemy.org/en/14/orm/session_api.html#sqlalchemy.orm.sessionmaker.close_all
+                    close_all_sessions()
                     db.drop_all()
-                break
+                sys.exit()
             elif user_input in ['c', 'continue']:
                 break
             elif user_input in ['e', 'exit', 'x', 'quit', 'leave']:

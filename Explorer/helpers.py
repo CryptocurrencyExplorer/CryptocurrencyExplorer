@@ -4,6 +4,7 @@ import json
 import requests
 import sys
 
+# This is a placeholder to indicate the transaction is empty
 EMPTY = []
 
 
@@ -90,6 +91,7 @@ def bulk_of_first_run_or_cron(name_of_flask_app, db, uniques, cryptocurrency, bl
                     address_lookup = db.session.query(Addresses).filter_by(
                         address=the_address).one_or_none()
                     if address_lookup is None:
+                        # TODO - right now the amount is always positive. This needs to be corrected.
                         commit_address_transaction = Addresses(address=the_address,
                                                                amount=vout['value'],
                                                                n=vout['n'],
@@ -100,6 +102,8 @@ def bulk_of_first_run_or_cron(name_of_flask_app, db, uniques, cryptocurrency, bl
                     address_summary_lookup = db.session.query(AddressSummary).filter_by(
                         address=the_address).one_or_none()
                     if address_summary_lookup is None:
+                        # TODO - this actually needs to do something.
+                        # TODO - preferably after/during the above TODO
                         address_summary = AddressSummary(address=the_address,
                                                          balance=vout['value'],
                                                          transactions_in=1,
@@ -136,6 +140,7 @@ def bulk_of_first_run_or_cron(name_of_flask_app, db, uniques, cryptocurrency, bl
                                                        # TODO - This needs pulled from bootstrap
                                                        # TODO - Witness actually needs supported
                                                        witness=None,
+                                                       # TODO - right now this is always false
                                                        spent=False)
                         db.session.add(commit_coinbase)
                     else:
@@ -155,6 +160,7 @@ def bulk_of_first_run_or_cron(name_of_flask_app, db, uniques, cryptocurrency, bl
                                                      # TODO - This needs pulled from bootstrap
                                                      # TODO - Witness actually needs supported
                                                      witness=None,
+                                                     # TODO - right now this is always false
                                                      spent=False,
                                                      prevout_hash=prev_txid,
                                                      prevout_n=the_prevout_n)

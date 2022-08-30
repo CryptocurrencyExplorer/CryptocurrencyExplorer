@@ -1,4 +1,3 @@
-import decimal
 import logging
 import sys
 from pathlib import Path
@@ -9,11 +8,9 @@ import blockchain
 from config import coin_name, rpcpassword, rpcport, rpcuser
 from config import database_uri
 from sqlalchemy.exc import IntegrityError
-from helpers import pre_boogie, bulk_of_first_run_or_cron, JSONRPC, JSONRPCException
+from helpers import pre_boogie, bulk_of_first_run_or_cron, JSONRPC
 from models import db, Blocks
 
-# This is a placeholder to indicate the transaction is empty
-EMPTY = ''
 EXPECTED_TABLES = {'addresses', 'address_summary', 'blocks', 'coinbasetxin', 'txs', 'txout', 'txin'}
 
 
