@@ -147,7 +147,10 @@ if __name__ == '__main__':
     except AttributeError:
         all_the_blocks = range(0, most_recent_block + 1)
         block_length = len(all_the_blocks)
-        lets_boogie(all_the_blocks, crypto_currency)
+        try:
+            lets_boogie(all_the_blocks, crypto_currency)
+        except KeyboardInterrupt:
+            first_run_app.logger.info("KeyboardInterrupt caught.")
     except OperationalError as exception:
         if 'database' in str(exception) and 'does not exist' in str(exception):
             first_run_app.logger.info("You'll need to follow the documentation to create the database.")
@@ -156,10 +159,15 @@ if __name__ == '__main__':
         while True:
             user_input = input('(C)ontinue, (D)rop all, or (E)xit?: ').lower()
             if user_input in ['d', 'drop', 'drop all']:
-                with first_run_app.app_context():
-                    # https://docs.sqlalchemy.org/en/14/orm/session_api.html#sqlalchemy.orm.sessionmaker.close_all
-                    close_all_sessions()
-                    db.drop_all()
+                try:
+                   with first_run_app.app_context():
+                        # https://docs.sqlalchemy.org/en/14/orm/session_api.html#sqlalchemy.orm.sessionmaker.close_all
+                        close_all_sessions()
+                        db.drop_all()
+                except OperationalError as e:
+                    if 'DeadlockDetected' in str(e):
+                        first_run_app.logger.info("Looks like you have something else occupying the database.")
+                        first_run_app.logger.info("This is probably cronjob.py. Shut it off and try this again.")
                 sys.exit()
             elif user_input in ['c', 'continue']:
                 break
@@ -170,7 +178,10 @@ if __name__ == '__main__':
         if most_recent_stored_block != most_recent_block:
             all_the_blocks = range(most_recent_stored_block + 1, most_recent_block + 1)
             block_length = most_recent_block
-            lets_boogie(all_the_blocks, crypto_currency)
+            try:
+                lets_boogie(all_the_blocks, crypto_currency)
+            except KeyboardInterrupt:
+                first_run_app.logger.info("KeyboardInterrupt caught.")
         else:
             first_run_app.logger.info("Looks like you're all up-to-date")
             sys.exit()
