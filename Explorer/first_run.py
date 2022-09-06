@@ -3,6 +3,7 @@ import sys
 import click
 from logging.handlers import RotatingFileHandler
 from flask import Flask
+from psycopg2 import errors
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.sql import desc
 from sqlalchemy.exc import IntegrityError, OperationalError
@@ -16,6 +17,9 @@ from helpers import pre_boogie, bulk_of_first_run_or_cron, JSONRPC, JSONRPCExcep
 from models import db, Blocks
 
 EXPECTED_TABLES = {'addresses', 'address_summary', 'blocks', 'coinbasetxin', 'txs', 'txout', 'txin'}
+# https://www.postgresql.org/docs/current/errcodes-appendix.html#ERRCODES-TABLE
+UniqueViolation = errors.lookup('23505')
+DiskFull = errors.lookup('53100')
 
 
 def create_app():
@@ -43,17 +47,27 @@ def lets_boogie(the_blocks, cryptocurrency):
             try:
                 bulk_of_first_run_or_cron(first_run_app, db, uniques, cryptocurrency, block_height,
                                           total_cumulative_difficulty, outstanding_coins, the_blocks)
-            except IntegrityError as e:
+            except(IntegrityError, UniqueViolation) as e:
                 first_run_app.logger.error(f"ERROR: {str(e)}")
                 db.session.rollback()
+                sys.exit()
+            # If disk is full we can't log anything.. so, shutdown.
+            except DiskFull:
+                first_run_app.logger.error(f"ERROR: Disk full! Shutting down..")
+                db.session.rollback()
+                sys.exit()
 
 
 def detect_flask_config():
+    app_key_default = False
+    csrf_key_default = False
     if app_key == rb"""app_key""":
         first_run_app.logger.error("Go into config.py and change the app_key!")
-        sys.exit()
+        app_key_default = True
     if csrf_key == "csrf_key":
         first_run_app.logger.error("Go into config.py and change the csrf_key!")
+        csrf_key_default = False
+    if app_key_default or csrf_key_default:
         sys.exit()
 
 
@@ -79,7 +93,7 @@ def detect_coin(cryptocurrency):
                         first_run_app.logger.info(f'Please put "{each}" into config.py under `coin_name`')
                         return the_coin.unique
             # No reason to put an else above,
-            # since this'll catch if nothing can be detected in the for loop
+            # since this will catch if nothing can be detected in the for loop
             first_run_app.logger.error("I wasn't able to auto-detect a coin/token.")
             first_run_app.logger.error("Are you using an unsupported coin/token?")
             first_run_app.logger.error("No? Then check out the README:")
@@ -124,64 +138,64 @@ if __name__ == '__main__':
     first_run_app = create_app()
     first_run_app.app_context().push()
 
-    if autodetect_config:
-        detect_flask_config()
     try:
-        rpcurl = f"http://127.0.0.1:{rpcport}"
-        crypto_currency = JSONRPC(rpcurl, rpcuser, rpcpassword)
-    except(JSONRPCException, ValueError):
-        first_run_app.logger.error("One or all of these is wrong: rpcuser/rpcpassword/rpcport. Fix this in config.py")
-        sys.exit()
-
-    uniques = detect_coin(crypto_currency)
-
-    if autodetect_tables:
-        detect_tables()
-
-    most_recent_block = crypto_currency.getblockcount()
-    if most_recent_block is None:
-        first_run_app.logger.error("Doesn't look like you have the daemon running. Fix this.")
-        sys.exit()
-    try:
-        most_recent_stored_block = db.session.query(Blocks).order_by(desc('height')).first().height
-    except AttributeError:
-        all_the_blocks = range(0, most_recent_block + 1)
-        block_length = len(all_the_blocks)
+        if autodetect_config:
+            detect_flask_config()
         try:
-            lets_boogie(all_the_blocks, crypto_currency)
-        except KeyboardInterrupt:
-            first_run_app.logger.info("KeyboardInterrupt caught.")
-    except OperationalError as exception:
-        if 'database' in str(exception) and 'does not exist' in str(exception):
-            first_run_app.logger.info("You'll need to follow the documentation to create the database.")
-            first_run_app.logger.info("This isn't possible through Flask right now (issue #15 in the Github repo).")
-    else:
-        while True:
-            user_input = input('(C)ontinue, (D)rop all, or (E)xit?: ').lower()
-            if user_input in ['d', 'drop', 'drop all']:
-                try:
-                   with first_run_app.app_context():
-                        # https://docs.sqlalchemy.org/en/14/orm/session_api.html#sqlalchemy.orm.sessionmaker.close_all
-                        close_all_sessions()
-                        db.drop_all()
-                except OperationalError as e:
-                    if 'DeadlockDetected' in str(e):
-                        first_run_app.logger.info("Looks like you have something else occupying the database.")
-                        first_run_app.logger.info("This is probably cronjob.py. Shut it off and try this again.")
-                sys.exit()
-            elif user_input in ['c', 'continue']:
-                break
-            elif user_input in ['e', 'exit', 'x', 'quit', 'leave']:
-                sys.exit()
-            else:
-                print('Can you try that again?')
-        if most_recent_stored_block != most_recent_block:
-            all_the_blocks = range(most_recent_stored_block + 1, most_recent_block + 1)
-            block_length = most_recent_block
-            try:
-                lets_boogie(all_the_blocks, crypto_currency)
-            except KeyboardInterrupt:
-                first_run_app.logger.info("KeyboardInterrupt caught.")
-        else:
-            first_run_app.logger.info("Looks like you're all up-to-date")
+            rpcurl = f"http://127.0.0.1:{rpcport}"
+            crypto_currency = JSONRPC(rpcurl, rpcuser, rpcpassword)
+        except(JSONRPCException, ValueError):
+            first_run_app.logger.error("One/all of these are wrong: rpcuser/rpcpassword/rpcport. Fix this in config.py")
             sys.exit()
+
+        uniques = detect_coin(crypto_currency)
+
+        if autodetect_tables:
+            detect_tables()
+
+        most_recent_block = crypto_currency.getblockcount()
+        if most_recent_block is None:
+            first_run_app.logger.error("Doesn't look like you have the daemon running. Fix this.")
+            sys.exit()
+        try:
+            most_recent_stored_block = db.session.query(Blocks).order_by(desc('height')).first().height
+        except AttributeError:
+            all_the_blocks = range(0, most_recent_block + 1)
+            block_length = len(all_the_blocks)
+            lets_boogie(all_the_blocks, crypto_currency)
+        except OperationalError as exception:
+            if 'database' in str(exception) and 'does not exist' in str(exception):
+                first_run_app.logger.info("You'll need to follow the documentation to create the database.")
+                first_run_app.logger.info("This isn't possible through Flask right now (issue #15 in the Github repo).")
+        else:
+            while True:
+                user_input = input('(C)ontinue, (D)rop all, or (E)xit?: ').lower()
+                if user_input in ['d', 'drop', 'drop all']:
+                    try:
+                        with first_run_app.app_context():
+                            # https://docs.sqlalchemy.org/en/14/orm/session_api.html#sqlalchemy.orm.sessionmaker.close_all
+                            close_all_sessions()
+                            db.drop_all()
+                    except OperationalError as e_:
+                        if 'DeadlockDetected' in str(e_):
+                            first_run_app.logger.info("Looks like you have something else occupying the database.")
+                            first_run_app.logger.info("This is probably cronjob.py. Shut it off and try this again.")
+                        else:
+                            print(str(e_))
+                    sys.exit()
+                elif user_input in ['c', 'continue']:
+                    break
+                elif user_input in ['e', 'exit', 'x', 'quit', 'leave']:
+                    sys.exit()
+                else:
+                    print('Can you try that again?')
+            if most_recent_stored_block != most_recent_block:
+                all_the_blocks = range(most_recent_stored_block + 1, most_recent_block + 1)
+                block_length = most_recent_block
+                lets_boogie(all_the_blocks, crypto_currency)
+            else:
+                first_run_app.logger.info("Looks like you're all up-to-date")
+                sys.exit()
+    except KeyboardInterrupt:
+        first_run_app.logger.info("KeyboardInterrupt caught.")
+        sys.exit()
