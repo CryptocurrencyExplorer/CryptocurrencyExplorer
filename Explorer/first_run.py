@@ -45,8 +45,11 @@ def lets_boogie(the_blocks, cryptocurrency):
     with click.progressbar(the_blocks, item_show_func=process_block) as progress_bar:
         for block_height in progress_bar:
             try:
-                bulk_of_first_run_or_cron(first_run_app, db, uniques, cryptocurrency, block_height,
-                                          total_cumulative_difficulty, outstanding_coins, the_blocks)
+                total_cumulative_difficulty, outstanding_coins = bulk_of_first_run_or_cron(first_run_app, db, uniques,
+                                                                                           cryptocurrency, block_height,
+                                                                                           total_cumulative_difficulty,
+                                                                                           outstanding_coins,
+                                                                                           the_blocks)
             except(IntegrityError, UniqueViolation) as e:
                 first_run_app.logger.error(f"ERROR: {str(e)}")
                 db.session.rollback()
@@ -198,4 +201,5 @@ if __name__ == '__main__':
                 sys.exit()
     except KeyboardInterrupt:
         first_run_app.logger.info("KeyboardInterrupt caught.")
+        db.session.close()
         sys.exit()

@@ -226,6 +226,7 @@ def bulk_of_first_run_or_cron(name_of_flask_app, db, uniques, cryptocurrency, bl
     if this_block_finished:
         db.session.commit()
         db.session.close()
+        return total_cumulative_difficulty, outstanding_coins
 
 
 class JSONRPC(object):
