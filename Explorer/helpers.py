@@ -84,6 +84,7 @@ def bulk_of_first_run_or_cron(name_of_flask_app, db, uniques, cryptocurrency, bl
                     if number != 0:
                         total_value_out_sans_coinbase += vout['value']
                     else:
+                        # all coinbase are added to outstanding
                         outstanding_coins += vout['value']
                     the_address = vout['scriptPubKey']['addresses'][0]
 
@@ -92,12 +93,13 @@ def bulk_of_first_run_or_cron(name_of_flask_app, db, uniques, cryptocurrency, bl
                         address=the_address).one_or_none()
                     if address_lookup is None:
                         # TODO - right now the amount is always positive. This needs to be corrected.
-                        commit_address_transaction = Addresses(address=the_address,
-                                                               amount=vout['value'],
-                                                               n=vout['n'],
-                                                               in_block=block_height,
-                                                               transaction=this_transaction)
-                        db.session.add(commit_address_transaction)
+                        commit_address_transaction_output = Addresses(address=the_address,
+                                                                      amount=vout['value'],
+                                                                      n=vout['n'],
+                                                                      in_block=block_height,
+                                                                      transaction=this_transaction,
+                                                                      type=1)
+                        db.session.add(commit_address_transaction_output)
 
                     address_summary_lookup = db.session.query(AddressSummary).filter_by(
                         address=the_address).one_or_none()
@@ -121,7 +123,8 @@ def bulk_of_first_run_or_cron(name_of_flask_app, db, uniques, cryptocurrency, bl
                         db.session.commit()
                     ###
                     tx_value_out += vout['value']
-                    commit_transaction_out = TxOut(txid=this_transaction,
+                    commit_transaction_out = TxOut(block_height=block_height,
+                                                   txid=this_transaction,
                                                    n=vout['n'],
                                                    value=vout['value'],
                                                    scriptpubkey=vout['scriptPubKey']['asm'],
@@ -163,7 +166,9 @@ def bulk_of_first_run_or_cron(name_of_flask_app, db, uniques, cryptocurrency, bl
                                                      # TODO - right now this is always false
                                                      spent=False,
                                                      prevout_hash=prev_txid,
-                                                     prevout_n=the_prevout_n)
+                                                     prevout_n=the_prevout_n,
+                                                     address=prevout_address,
+                                                     value=prevout_value)
                         cb_prev_tx = db.session.query(CoinbaseTXIn).filter_by(txid=prev_txid).one_or_none()
                         if cb_prev_tx is not None:
                             cb_prev_tx.spent = True

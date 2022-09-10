@@ -23,6 +23,10 @@ class Addresses(db.Model):
                             index=True,
                             unique=False,
                             nullable=False)
+    # input or output, 0 or 1
+    type = db.Column(db.Boolean,
+                     unique=False,
+                     nullable=False)
 
 
 class AddressSummary(db.Model):
@@ -164,7 +168,8 @@ class TXIn(db.Model):
                    primary_key=True)
     block_height = db.Column(db.Integer,
                              unique=False,
-                             nullable=False)
+                             nullable=False,
+                             index=True)
     txid = db.Column(db.String,
                      unique=False,
                      nullable=False,
@@ -195,12 +200,22 @@ class TXIn(db.Model):
                           unique=False,
                           nullable=False,
                           index=True)
+    address = db.Column(db.String,
+                        unique=False,
+                        nullable=False)
+    value = db.Column(db.Numeric,
+                      unique=False,
+                      nullable=False)
 
 
 class TxOut(db.Model):
     __tablename__ = 'txout'
     id = db.Column(db.Integer,
                    primary_key=True)
+    block_height = db.Column(db.Integer,
+                             unique=False,
+                             nullable=False,
+                             index=True)
     txid = db.Column(db.String,
                      unique=False,
                      nullable=False,

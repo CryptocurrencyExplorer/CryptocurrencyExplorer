@@ -41,10 +41,10 @@
                 {% for vin in inputs %}
                 <tr>
                     {% if coinbase is not none %}<td><a id="i{{ loop.index }}">{{ loop.index }}</a></td>{% else %}<td><a id="i{{ loop.index0 }}">{{ loop.index0 }}</a></td>{% endif %}
-                    <td>TODO</td>
-                    <td>TODO</td>
-                    <td>TODO</td>
-                    <td>{{ vin.scriptsig }}</td>
+                    <td><a href="/tx/{{ vin.prevout_hash }}#o{{ vin.prevout_n }}">{{ vin.prevout_hash[0:10] }}...:{{ vin.prevout_n }}</td>
+                    <td>{{ vin.value }}</td>
+                    <td><a href="/address/{{ vin.address }}">{{ vin.address }}</td>
+                    <td>{{ vin.scriptsig[0:10] }} ... {{ vin.scriptsig[-10:] }}</td>
                 </tr>
                 {% endfor %}
                 {% endif %}

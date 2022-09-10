@@ -53,11 +53,13 @@ def lets_boogie(the_blocks, cryptocurrency):
             except(IntegrityError, UniqueViolation) as e:
                 first_run_app.logger.error(f"ERROR: {str(e)}")
                 db.session.rollback()
+                db.session.close()
                 sys.exit()
             # If disk is full we can't log anything.. so, shutdown.
             except DiskFull:
                 first_run_app.logger.error(f"ERROR: Disk full! Shutting down..")
                 db.session.rollback()
+                db.session.close()
                 sys.exit()
 
 

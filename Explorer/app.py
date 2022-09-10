@@ -274,6 +274,8 @@ def block(block_hash_or_height):
                 next_block_hash = None
 
             transactions = db.session.query(TXs).filter_by(block_height=the_block_height).all()
+            txin = db.session.query(TXIn).filter_by(block_height=the_block_height)
+            txout = db.session.query(TxOut).filter_by(block_height=the_block_height).all()
 
             return render_template('block.html',
                                    block_hash=block_hash,
@@ -293,6 +295,8 @@ def block(block_hash_or_height):
                                    value_out=the_block.value_out,
                                    formatted_transaction_fees=format_eight_zeroes(the_block.transaction_fees),
                                    transaction_fees=the_block.transaction_fees,
+                                   the_txin=txin,
+                                   the_txout=txout,
                                    # TODO
                                    average_coin_age='?')
         else:

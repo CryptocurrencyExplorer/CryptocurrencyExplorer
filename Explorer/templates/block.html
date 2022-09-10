@@ -37,9 +37,9 @@
                     <td><a href="/tx/{{ each.txid }}">{{ each.txid[0:10] }}...</a></td>
                     <td>{% if each.fee == 0 %}0.00000000{% else %}{{ each.fee }}{% endif %}</td>
                     <td>{{ each.size / 1000 }}</td>{% if loop.index0 == 0 %}
-                    <td>Generation: {{ each.total_out - transaction_fees }} + {{ formatted_transaction_fees }} total fees</td>{% else %}
-                    <td><a href="../address/ADDRESS">ADDRESS</a>: TODO</td>{% endif %}
-                    <td><a href="../address/ADDRESS">ADDRESS</a>: TODO</td>
+                    <td>Generation: {{ each.total_out - transaction_fees }} + {{ formatted_transaction_fees }} total fees</td>{% else %}<td>{% for txin in the_txin %}{% if each.txid == txin.txid %}
+                    <a href="../address/{{ txin.address }}">{{ txin.address }}</a>: {{ txin.value }}<br />{% endif %}{% endfor %}</td>{% endif %}<td>{% for txout in the_txout %}{% if each.txid == txout.txid %}
+                    <a href="../address/{{ txout.address }}">{{ txout.address }}</a>: {{ txout.value }}<br />{% endif %}{% endfor %}</td>
                 </tr>
                 {% endfor %}
             </table>
