@@ -8,27 +8,12 @@ import sys
 EMPTY = []
 
 
-def format_time(timestamp):
-    return datetime.datetime.fromtimestamp(timestamp)
-
-
 def chain_age(timestamp, genesis_time):
     the_timestamp = datetime.datetime.fromtimestamp(timestamp)
     genesis_timestamp = datetime.datetime.fromtimestamp(genesis_time)
     difference = the_timestamp - genesis_timestamp
     difference_in_days = decimal.Decimal(difference.total_seconds()) / decimal.Decimal(86400)
     return f"{difference_in_days:.2f}"
-
-
-def format_size(tx_size):
-    return tx_size / 1000.0
-
-
-def format_eight_zeroes(the_item):
-    if the_item == 0:
-        return '0.00000000'
-    else:
-        return format(the_item, '.8f')
 
 
 def pre_boogie(the_blocks, db, cryptocurrency):
@@ -88,18 +73,16 @@ def bulk_of_first_run_or_cron(name_of_flask_app, db, uniques, cryptocurrency, bl
                         outstanding_coins += vout['value']
                     the_address = vout['scriptPubKey']['addresses'][0]
 
-                    # address stuff
-                    address_lookup = db.session.query(Addresses).filter_by(
-                        address=the_address).one_or_none()
-                    if address_lookup is None:
-                        # TODO - right now the amount is always positive. This needs to be corrected.
-                        commit_address_transaction_output = Addresses(address=the_address,
-                                                                      amount=vout['value'],
-                                                                      n=vout['n'],
-                                                                      in_block=block_height,
-                                                                      transaction=this_transaction,
-                                                                      type=1)
-                        db.session.add(commit_address_transaction_output)
+                    commit_address_transaction_output = Addresses(address=the_address,
+                                                                  amount=vout['value'],
+                                                                  n=vout['n'],
+                                                                  block_height=block_height,
+                                                                  block_hash=the_block['hash'],
+                                                                  the_time=the_block['time'],
+                                                                  transaction=this_transaction,
+                                                                  input=False,
+                                                                  output=True)
+                    db.session.add(commit_address_transaction_output)
 
                     address_summary_lookup = db.session.query(AddressSummary).filter_by(
                         address=the_address).one_or_none()
@@ -155,6 +138,16 @@ def bulk_of_first_run_or_cron(name_of_flask_app, db, uniques, cryptocurrency, bl
                         prev_out_total_out += prevout_value
                         tx_value_in += prevout_value
                         prevout_address = this_prev_vin['scriptPubKey']['addresses'][0]
+                        commit_address_transaction_input = Addresses(address=prevout_address,
+                                                                     amount=-prevout_value,
+                                                                     n=vin_num,
+                                                                     block_height=block_height,
+                                                                     block_hash=the_block['hash'],
+                                                                     the_time=the_block['time'],
+                                                                     transaction=this_transaction,
+                                                                     input=True,
+                                                                     output=False)
+                        db.session.add(commit_address_transaction_input)
                         commit_transaction_in = TXIn(block_height=block_height,
                                                      txid=this_transaction,
                                                      n=number,

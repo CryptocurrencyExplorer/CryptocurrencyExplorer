@@ -3,6 +3,7 @@
 # ----------------------------------------------
 # Use Python 3.3+ because of `decimal` issues:
 # https://docs.sqlalchemy.org/en/14/core/type_basics.html#sqlalchemy.types.Numeric
+import datetime
 import logging
 import sys
 from decimal import Decimal
@@ -22,8 +23,8 @@ from wtforms.validators import DataRequired, Length
 import blockchain
 from config import coin_name, rpcpassword, rpcport, rpcuser
 from config import app_key, csrf_key, database_uri, program_name
-from helpers import chain_age, format_eight_zeroes, format_time, JSONRPC, JSONRPCException
-from models import db, Blocks, CoinbaseTXIn, TXs, TXIn, TxOut, Addresses
+from helpers import chain_age, JSONRPC, JSONRPCException
+from models import db, Blocks, CoinbaseTXIn, TXs, TXIn, TxOut, Addresses, AddressSummary
 
 
 class DecimalEncoder(JSONEncoder):
@@ -88,6 +89,24 @@ def create_app(the_csrf):
 csrf = CSRFProtect()
 application, coin_uniques, cryptocurrency = create_app(csrf)
 application.app_context().push()
+
+
+@application.template_global()
+def format_time(timestamp):
+    return datetime.datetime.fromtimestamp(timestamp)
+
+
+@application.template_global()
+def format_size(tx_size):
+    return tx_size / 1000.0
+
+
+@application.template_global()
+def format_eight_zeroes(the_item):
+    if the_item == 0:
+        return '0.00000000'
+    else:
+        return format(the_item, '.8f')
 
 
 # When first_run is executing, this needs to happen if we want to also view the explorer
@@ -209,7 +228,7 @@ def index():
                                        hi=hi,
                                        latest_block=latest_block_height,
                                        chain_age=chain_age,
-                                       genesis_time=genesis_timestamp)
+                                       genesis_time=genesis_timestamp), 200
     return render_template('index.html',
                            form=form,
                            front_page_blocks=front_page_items,
@@ -218,7 +237,7 @@ def index():
                            hi=hi,
                            latest_block=latest_block_height,
                            chain_age=chain_age,
-                           genesis_time=genesis_timestamp)
+                           genesis_time=genesis_timestamp), 200
 
 
 @application.get("/address/")
@@ -231,15 +250,24 @@ def redirect_to_address():
 
 @application.get("/address/<the_address>/")
 def address(the_address):
-    # TODO
-    address_lookup = db.session.query(Addresses).filter_by()
+    # No reason to waste an SQL lookup if we're being redirected from /address/ ^
+    if the_address == 'INVALIDADDRESS':
+        return render_template('404.html', error="Not a valid address"), 404
+    address_lookup = db.session.query(Addresses).filter_by(address=the_address).order_by(desc('block_height')).all()
     if address_lookup is None:
         return render_template('404.html', error="Not a valid address"), 404
     else:
-        # TODO
-        db.session.query()
-        # TODO
-        return render_template('address.html')
+        address_summary = db.session.query(AddressSummary).filter_by(address=the_address).one_or_none()
+        if address_summary is not None:
+            return render_template('address.html',
+                                   address_info=address_lookup,
+                                   this_address=the_address,
+                                   total_balance=address_summary.balance,
+                                   total_received=address_summary.received,
+                                   total_sent=address_summary.sent,
+                                   which_currency=coin_uniques["shortened"]), 200
+        else:
+            return render_template('404.html', error="Not a valid address"), 404
 
 
 @application.get("/block/")
@@ -298,7 +326,7 @@ def block(block_hash_or_height):
                                    the_txin=txin,
                                    the_txout=txout,
                                    # TODO
-                                   average_coin_age='?')
+                                   average_coin_age='?'), 200
         else:
             return render_template('404.html', error="Not a valid block height/hash"), 404
     else:
@@ -331,7 +359,7 @@ def tx(transaction):
                                    total_in=format_eight_zeroes(check_transaction.total_in),
                                    this_transaction=transaction.lower(),
                                    fee=format_eight_zeroes(check_transaction.fee),
-                                   size=check_transaction.size)
+                                   size=check_transaction.size), 200
         else:
             return render_template('404.html', error="Not a valid transaction"), 404
     else:
@@ -340,7 +368,7 @@ def tx(transaction):
 
 @application.get("/api/")
 def api_index():
-    return render_template('api_index.html')
+    return render_template('api_index.html'), 200
 
 
 @application.get("/api/addressbalance/")

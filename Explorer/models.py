@@ -6,27 +6,37 @@ db = SQLAlchemy()
 
 class Addresses(db.Model):
     __tablename__ = 'addresses'
+    id = db.Column(db.Integer,
+                   primary_key=True)
     address = db.Column(db.String,
                         unique=False,
                         nullable=False,
-                        primary_key=True)
+                        index=True)
     amount = db.Column(db.Numeric,
                        unique=False,
                        nullable=False)
     n = db.Column(db.Integer,
                   unique=False,
                   nullable=False)
-    in_block = db.Column(db.Integer,
+    block_height = db.Column(db.Integer,
+                             unique=False,
+                             nullable=False)
+    block_hash = db.Column(db.String,
+                           unique=False,
+                           nullable=False)
+    the_time = db.Column(db.Integer,
                          unique=False,
                          nullable=False)
     transaction = db.Column(db.String,
                             index=True,
                             unique=False,
                             nullable=False)
-    # input or output, 0 or 1
-    type = db.Column(db.Boolean,
-                     unique=False,
-                     nullable=False)
+    input = db.Column(db.Boolean,
+                      unique=False,
+                      nullable=False)
+    output = db.Column(db.Boolean,
+                       unique=False,
+                       nullable=False)
 
 
 class AddressSummary(db.Model):
@@ -186,9 +196,6 @@ class TXIn(db.Model):
     witness = db.Column(db.String,
                         unique=False,
                         nullable=True)
-    coinbase = db.Column(db.Boolean,
-                         unique=False,
-                         nullable=True)
     spent = db.Column(db.Boolean,
                       unique=False,
                       nullable=True)
@@ -222,8 +229,7 @@ class TxOut(db.Model):
                      index=True)
     n = db.Column(db.Integer,
                   unique=False,
-                  nullable=False,
-                  index=True)
+                  nullable=False)
     value = db.Column(db.Numeric,
                       unique=False,
                       nullable=False)
