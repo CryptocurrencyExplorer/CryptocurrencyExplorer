@@ -72,7 +72,7 @@ def create_app(the_csrf):
     prep_application.config['VERSION'] = 0.8
     prep_application.config['WTF_CSRF_SECRET_KEY'] = csrf_key
     prep_application.jinja_env.trim_blocks = True
-    prep_application.jinja_env.lstrip_blocks = False
+    prep_application.jinja_env.lstrip_blocks = True
     prep_application.jinja_env.enable_async = True
     prep_application.wsgi_app = ProxyFix(prep_application.wsgi_app, x_proto=1, x_host=1)
     db.init_app(prep_application)
