@@ -10,7 +10,7 @@ from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm import close_all_sessions
 import blockchain
 from blockchain import SUPPORTED_COINS
-from config import autodetect_coin, autodetect_config, autodetect_rpc, autodetect_tables
+from config import autodetect_config, autodetect_tables
 from config import coin_name, rpcpassword, rpcport, rpcuser
 from config import app_key, csrf_key, database_uri
 from helpers import pre_boogie, bulk_of_first_run_or_cron, JSONRPC, JSONRPCException

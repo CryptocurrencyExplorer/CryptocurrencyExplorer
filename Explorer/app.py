@@ -13,7 +13,6 @@ from flask import redirect, request, url_for, render_template, session
 from flask.json import JSONEncoder
 from flask_wtf import FlaskForm
 from flask_wtf.csrf import CSRFError, CSRFProtect
-from sqlalchemy import func
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.pool import NullPool
 from sqlalchemy.sql import desc
@@ -401,9 +400,9 @@ def redirect_to_api__validate_address():
     return redirect(url_for('api__validate_address', address="INVALID_ADDRESS"))
 
 
-@application.get("/api/addressbalance/<address>/")
-def api__address_balance(address):
-    return make_response(jsonify({'message': 'todo',
+@application.get("/api/addressbalance/<the_address>/")
+def api__address_balance(the_address):
+    return make_response(jsonify({'message': the_address,
                                   'error': 'todo'}), 200)
 
 
@@ -476,9 +475,9 @@ def api__rawtx(transaction):
         return make_response(jsonify(the_transaction), 200)
 
 
-@application.get("/api/receivedbyaddress/<address>/")
-def api__received_by_address(address):
-    return make_response(jsonify({'message': 'todo',
+@application.get("/api/receivedbyaddress/<the_address>/")
+def api__received_by_address(the_address):
+    return make_response(jsonify({'message': the_address,
                                   'error': 'todo'}), 200)
 
 
@@ -488,9 +487,9 @@ def api__rich_list():
                                   'error': 'todo'}), 200)
 
 
-@application.get("/api/sentbyaddress/<address>/")
-def api__sent_by_address(address):
-    return make_response(jsonify({'message': 'todo',
+@application.get("/api/sentbyaddress/<the_address>/")
+def api__sent_by_address(the_address):
+    return make_response(jsonify({'message': the_address,
                                   'error': 'todo'}), 200)
 
 
@@ -506,9 +505,9 @@ def api__total_transactions():
                                   'error': 'none'}), 200)
 
 
-@application.get("/api/validateaddress/<address>/")
-def api__validate_address(address):
-    if cryptocurrency.validateaddress(address)['isvalid']:
+@application.get("/api/validateaddress/<the_address>/")
+def api__validate_address(the_address):
+    if cryptocurrency.validateaddress(the_address)['isvalid']:
         return make_response(jsonify({'message': 'valid',
                                       'error': 'none'}), 200)
     else:

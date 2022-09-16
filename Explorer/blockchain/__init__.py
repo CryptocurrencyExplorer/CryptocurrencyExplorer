@@ -19,6 +19,7 @@ class Litecoin:
                           'prev_hash': '0000000000000000000000000000000000000000000000000000000000000000'},
               'burn_address': None}
 
+
 class Defcoin:
     unique = {'shortened': 'DFC',
               'tx': {},
