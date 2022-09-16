@@ -1,19 +1,13 @@
 {% extends "base.html" %}
 {% block title %}Index{{ super() }}{% endblock %}
 
-{% block head %}
-{{ super() }}
-{% endblock %}
+{% block head %}{{ super() }}{% endblock %}
 
 {% block additional_text %}{{ config.COIN_NAME }}{% endblock %}
 
-{% block the_form %}
-{{ super() }}
-{% endblock %}
+{% block the_form %}{{ super() }}{% endblock %}
 
-{% block start_body %}
-{{ super() }}
-{% endblock %}
+{% block start_body %}{{ super() }}{% endblock %}
 
 {% block additional_body %}
             <p class="pull-right">{% if (hi + count) > latest_block %}&#60;&#60;{% else %}<a href="?hi={{ latest_block }}&count={{ count }}">&#60;&#60;</a>{% endif %} {% if (hi + count) > latest_block %}&#60;{% else %}<a href="?hi={{ hi + count }}&count={{ count }}">&#60;</a>{% endif %} {% if (hi-count) <= 0 %}>{% else %}<a href="?hi={{ hi - count }}&count={{ count }}">&#62;</a>{% endif %} {% if (count - hi) >= 0 %}&#62;&#62;{% else %}<a href="?hi={{ count - 1 }}&count={{ count }}">&#62;&#62;</a>{% endif %} {% if count == 50 %}50{% else %}<a href="?count=50&hi={{ hi }}">50</a>{% endif %} {% if count == 125 %}125{% else %}<a href="?count=125&hi={{ hi }}">125</a>{% endif %} {% if count == 250 %}250{% else %}<a href="?count=250&hi={{ hi }}">250</a>{% endif %} {% if count == 500 %}500{% else %}<a href="?count=500&hi={{ hi }}">500</a>{% endif %}  <a href="/">Search</a>  [<a href="/api/mempool">current mempool</a>]</p>

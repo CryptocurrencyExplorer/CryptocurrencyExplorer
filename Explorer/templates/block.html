@@ -17,8 +17,12 @@
 {% block additional_body %}
             <p>
                 Hash: {{ block_hash }}<br />
-                {% if previous_block_hash is not none %}Previous Block: <a href="/block/{{ previous_block_hash }}">{{ previous_block_hash }}</a><br />{% endif %}
-                {% if next_block_hash is not none %}Next Block: <a href="/block/{{ next_block_hash }}">{{ next_block_hash }}</a><br />{% endif %}
+                {% if previous_block_hash is not none %}
+                Previous Block: <a href="/block/{{ previous_block_hash }}">{{ previous_block_hash }}</a><br />
+                {% endif %}
+                {% if next_block_hash is not none %}
+                Next Block: <a href="/block/{{ next_block_hash }}">{{ next_block_hash }}</a><br />
+                {% endif %}
                 Height: {{ block_height }}<br />
                 Version: {{ version }}<br />
                 Transaction Merkle Root: {{ merkle_root }}<br />

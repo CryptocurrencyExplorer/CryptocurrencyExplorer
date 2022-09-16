@@ -1,18 +1,13 @@
 {% extends "base.html" %}
 {% block title %}Transaction{{ super() }}{% endblock %}
 
-{% block head %}
-{{ super() }}
-{% endblock %}
+{% block head %}{{ super() }}{% endblock %}
 
 {% block additional_text %}Transaction {{ this_transaction[0:10] }}...{{ this_transaction[-4:] }}{% endblock %}
 
-{% block the_form %}
-{% endblock %}
+{% block the_form %}{% endblock %}
 
-{% block start_body %}
-{{ super() }}
-{% endblock %}
+{% block start_body %}{{ super() }}{% endblock %}
 
 {% block additional_body %}
            <p>

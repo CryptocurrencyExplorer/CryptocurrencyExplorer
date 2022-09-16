@@ -16,14 +16,16 @@
         <link rel="stylesheet" href="{{ url_for('static', filename='css/abe.css') }}">
         <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
         <title>{% block title %}{% endblock %} | {% if config.PROGRAM_NAME is not none %}{{ config.PROGRAM_NAME }}{% else %}Cryptocurrency Explorer{% endif %}</title>
-    </head>{% endblock %}
+    </head>
+    {% endblock %}
+    {% block start_body %}
     <body>
-        {% block start_body %}
         <div class="container">
             <h1 class=woodcenter><a href="/">
                 <img src="{{ url_for('static', filename='images/cryptocurrency.svg') }}" alt="{% if config.COIN_NAME != '' %}{{ config.COIN_NAME }}{% else %}A really cool cryptocurrency{% endif %} logo" title="{% if config.COIN_NAME != '' %}{{ config.COIN_NAME }}{% else %}A really cool cryptocurrency{% endif %} logo" width="52px" height="52px"/></a><a href="/"></a> {% block additional_text %}{% endblock %}
+
             </h1>
-        {% endblock %}
+    {% endblock %}
             {% block the_form %}
             <div class="formtest">
                 <form method="post">
@@ -35,14 +37,14 @@
                         <br />Count is limited to a maximum of 500 blocks.
                     </p>
                 </form>
-            </div>{% endblock %}
-            {% block additional_body %}
+            </div>
             {% endblock %}
+{% block additional_body %}{% endblock %}
         </div>
-        {% block footer %}
+{% block footer %}
         <div class="footer">
             <b>Check out the <a href="https://github.com/CryptocurrencyExplorer/CryptocurrencyExplorer">source code!</a></b>
         </div>
-        {% endblock %}
+{% endblock %}
     </body>
 </html>
