@@ -50,7 +50,7 @@
                 {% for vout in outputs %}
                 <tr>
                     <td><a id="o{{ loop.index0 }}">{{ loop.index0 }}</a></td>
-                    <td>{% if vout.spent %}<a href="/tx/{{ vout.linked_txid }}{{ vout.linked_txid_n }}">{{ vout.linked_txid[0:10] }}...:{{ vout.linked_txid_n }}</a>{% else %}Not yet redeemed{% endif %}</td>
+                    <td>{% if vout.spent %}<a href="/tx/{{ vout.linked_txid }}#i{{ vout.linked_txid_n }}">{{ vout.linked_txid[0:10] }}...:{{ vout.linked_txid_n }}</a>{% else %}Not yet redeemed{% endif %}</td>
                     <td>{{ vout.value }}</td>
                     <td><a href="/address/{{ vout.address }}">{{ vout.address }}</a></td>
                     <td>{{ vout.scriptpubkey }}</td>
