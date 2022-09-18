@@ -57,6 +57,8 @@ def create_app(the_csrf):
         sys.exit()
     prep_application.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
     prep_application.config['MAX_CONTENT_LENGTH'] = 256
+    # 30 days
+    prep_application.config['PERMANENT_SESSION_LIFETIME'] = 2592000
     prep_application.config['PROGRAM_NAME'] = program_name
     # This appears to be an issue -- https://github.com/wtforms/flask-wtf/issues/521.
     # prep_application.config['REMEMBER_COOKIE_HTTPONLY'] = True

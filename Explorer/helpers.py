@@ -113,6 +113,7 @@ def bulk_of_first_run_or_cron(name_of_flask_app, db, uniques, cryptocurrency, bl
                                                    scriptpubkey=vout['scriptPubKey']['asm'],
                                                    address=the_address,
                                                    linked_txid=None,
+                                                   linked_txid_n=None,
                                                    spent=False)
                     db.session.add(commit_transaction_out)
                     total_value_out += vout['value']
@@ -125,9 +126,7 @@ def bulk_of_first_run_or_cron(name_of_flask_app, db, uniques, cryptocurrency, bl
                                                        sequence=vin['sequence'],
                                                        # TODO - This needs pulled from bootstrap
                                                        # TODO - Witness actually needs supported
-                                                       witness=None,
-                                                       # TODO - right now this is always false
-                                                       spent=False)
+                                                       witness=None)
                         db.session.add(commit_coinbase)
                     else:
                         previous_transaction = cryptocurrency.getrawtransaction(vin['txid'], 1)
@@ -156,26 +155,17 @@ def bulk_of_first_run_or_cron(name_of_flask_app, db, uniques, cryptocurrency, bl
                                                      # TODO - This needs pulled from bootstrap
                                                      # TODO - Witness actually needs supported
                                                      witness=None,
-                                                     # TODO - right now this is always false
-                                                     spent=False,
                                                      prevout_hash=prev_txid,
                                                      prevout_n=the_prevout_n,
                                                      address=prevout_address,
                                                      value=prevout_value)
-                        cb_prev_tx = db.session.query(CoinbaseTXIn).filter_by(txid=prev_txid).one_or_none()
-                        if cb_prev_tx is not None:
-                            cb_prev_tx.spent = True
-                            db.session.add(cb_prev_tx)
-                        else:
-                            the_prev_tx = db.session.query(TXIn).filter_by(txid=prev_txid).first()
-                            if the_prev_tx is not None:
-                                the_prev_tx.spent = True
-                                db.session.add(the_prev_tx)
-                            else:
-                                # This shouldn't happen, but just in case..
-                                name_of_flask_app.logger.error(
-                                    f"ERROR: Transaction {prev_txid} not found in TXIn or CoinbaseTXIn")
-                                sys.exit()
+                        the_spent_transaction_out = db.session.query(TxOut).filter_by(txid=prev_txid,
+                                                                                      n=the_prevout_n).one_or_none()
+                        if the_spent_transaction_out is not None:
+                            the_spent_transaction_out.spent = True
+                            the_spent_transaction_out.linked_txid = this_transaction
+                            the_spent_transaction_out.linked_txid_n = the_prevout_n
+                            db.session.add(the_spent_transaction_out)
                         db.session.add(commit_transaction_in)
                 tx_total_fees = prev_out_total_out - total_value_out_sans_coinbase
                 outstanding_coins -= tx_total_fees

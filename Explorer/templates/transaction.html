@@ -36,9 +36,9 @@
                 {% for vin in inputs %}
                 <tr>
                     {% if coinbase is not none %}<td><a id="i{{ loop.index }}">{{ loop.index }}</a></td>{% else %}<td><a id="i{{ loop.index0 }}">{{ loop.index0 }}</a></td>{% endif %}
-                    <td><a href="/tx/{{ vin.prevout_hash }}#o{{ vin.prevout_n }}">{{ vin.prevout_hash[0:10] }}...:{{ vin.prevout_n }}</td>
+                    <td><a href="/tx/{{ vin.prevout_hash }}#o{{ vin.prevout_n }}">{{ vin.prevout_hash[0:10] }}...:{{ vin.prevout_n }}</a></td>
                     <td>{{ vin.value }}</td>
-                    <td><a href="/address/{{ vin.address }}">{{ vin.address }}</td>
+                    <td><a href="/address/{{ vin.address }}">{{ vin.address }}</a></td>
                     <td>{{ vin.scriptsig[0:10] }} ... {{ vin.scriptsig[-10:] }}</td>
                 </tr>
                 {% endfor %}
@@ -47,25 +47,16 @@
             <a id="outputs"><h3>Outputs</h3></a>
             <table class="table">
                 <tr><th>Index</th><th>Redeemed at input</th><th>Amount</th><th>To address</th><th>ScriptPubKey</th></tr>
-                {% if coinbase is not none %}
-                <tr>
-                    <td><a id="o0">0</a></td>
-                    <td>{% if outputs.spent %}<a href="/tx/TODO"></a>TODO{% else %}Not yet redeemed{% endif %}</td>
-                    <td>{{ outputs.0.value }}</td>
-                    <td><a href="/address/{{ outputs.0.address }}">{{ outputs.0.address }}</a></td>
-                    <td>{{ outputs.0.scriptpubkey }}</td>
-                </tr>
-                {% else %}
                 {% for vout in outputs %}
                 <tr>
                     <td><a id="o{{ loop.index0 }}">{{ loop.index0 }}</a></td>
-                    <td>{% if outputs.spent %}<a href="/tx/TODO"></a>TODO{% else %}Not yet redeemed{% endif %}</td>
+                    <td>{% if vout.spent %}<a href="/tx/{{ vout.linked_txid }}{{ vout.linked_txid_n }}">{{ vout.linked_txid[0:10] }}...:{{ vout.linked_txid_n }}</a>{% else %}Not yet redeemed{% endif %}</td>
                     <td>{{ vout.value }}</td>
                     <td><a href="/address/{{ vout.address }}">{{ vout.address }}</a></td>
                     <td>{{ vout.scriptpubkey }}</td>
                 </tr>
                 {% endfor %}
-                {% endif %}
+
             </table>
 {% endblock %}
 

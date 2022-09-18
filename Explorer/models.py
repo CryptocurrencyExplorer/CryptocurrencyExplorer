@@ -167,9 +167,6 @@ class CoinbaseTXIn(db.Model):
     witness = db.Column(db.String,
                         unique=False,
                         nullable=True)
-    spent = db.Column(db.Boolean,
-                      unique=False,
-                      nullable=True)
 
 
 class TXIn(db.Model):
@@ -196,9 +193,6 @@ class TXIn(db.Model):
     witness = db.Column(db.String,
                         unique=False,
                         nullable=True)
-    spent = db.Column(db.Boolean,
-                      unique=False,
-                      nullable=True)
     prevout_hash = db.Column(db.String,
                              unique=False,
                              nullable=False,
@@ -242,6 +236,9 @@ class TxOut(db.Model):
     linked_txid = db.Column(db.String,
                             unique=False,
                             nullable=True)
+    linked_txid_n = db.Column(db.Integer,
+                              unique=False,
+                              nullable=True)
     spent = db.Column(db.Boolean,
                       unique=False,
                       nullable=False)
