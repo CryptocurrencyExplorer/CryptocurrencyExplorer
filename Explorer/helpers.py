@@ -164,7 +164,7 @@ def bulk_of_first_run_or_cron(name_of_flask_app, db, uniques, cryptocurrency, bl
                         if the_spent_transaction_out is not None:
                             the_spent_transaction_out.spent = True
                             the_spent_transaction_out.linked_txid = this_transaction
-                            the_spent_transaction_out.linked_txid_n = the_prevout_n
+                            the_spent_transaction_out.linked_txid_n = vin_num
                             db.session.add(the_spent_transaction_out)
                         db.session.add(commit_transaction_in)
                 tx_total_fees = prev_out_total_out - total_value_out_sans_coinbase
