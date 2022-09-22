@@ -11,10 +11,10 @@
 
 {% block additional_body %}
             <p>
-                Balance: {{ total_balance }} {{ which_currency }}<br />
-                Transactions in: TODO<br />
+                Balance: {% if total_balance == 0 %}0.00000000{% else %}{{ total_balance }}{% endif %} {{ which_currency }}<br />
+                Transactions in: {{ the_address_summary.transactions_in }}<br />
                 Received: {{ total_received }} {{ which_currency }}<br />
-                Transactions out: TODO<br />
+                Transactions out: {{ the_address_summary.transactions_out }}<br />
                 Sent: {{ total_sent }} {{ which_currency }}<br />
             </p>
             <h3>Transactions</h3>
@@ -26,7 +26,7 @@
                     <td><a href="/block/{{ each.block_hash }}">{{ each.block_height }}</a></td>
                     <td>{{ format_time(each.the_time) }}</td>
                     <td>{{ each.amount }}</td>
-                    <td>TODO</td>
+                    <td>{% if each.balance == 0 %}0.00000000{% else %}{{ each.balance }}{% endif %}</td>
                     <td>{{ which_currency }}</td>
                 </tr>
                 {% endfor %}

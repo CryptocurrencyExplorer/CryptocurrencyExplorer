@@ -2,7 +2,6 @@ import datetime
 import decimal
 import json
 import requests
-import sys
 
 # This is a placeholder to indicate the transaction is empty
 EMPTY = []
@@ -73,37 +72,44 @@ def bulk_of_first_run_or_cron(name_of_flask_app, db, uniques, cryptocurrency, bl
                         outstanding_coins += vout['value']
                     the_address = vout['scriptPubKey']['addresses'][0]
 
-                    commit_address_transaction_output = Addresses(address=the_address,
-                                                                  amount=vout['value'],
-                                                                  n=vout['n'],
-                                                                  block_height=block_height,
-                                                                  block_hash=the_block['hash'],
-                                                                  the_time=the_block['time'],
-                                                                  transaction=this_transaction,
-                                                                  input=False,
-                                                                  output=True)
-                    db.session.add(commit_address_transaction_output)
-
                     address_summary_lookup = db.session.query(AddressSummary).filter_by(
                         address=the_address).one_or_none()
                     if address_summary_lookup is None:
-                        # TODO - this actually needs to do something.
-                        # TODO - preferably after/during the above TODO
+                        commit_address_transaction_output = Addresses(address=the_address,
+                                                                      amount=vout['value'],
+                                                                      n=vout['n'],
+                                                                      block_height=block_height,
+                                                                      balance=vout['value'],
+                                                                      block_hash=the_block['hash'],
+                                                                      the_time=the_block['time'],
+                                                                      transaction=this_transaction,
+                                                                      input=False,
+                                                                      output=True)
+                        db.session.add(commit_address_transaction_output)
                         address_summary = AddressSummary(address=the_address,
                                                          balance=vout['value'],
                                                          transactions_in=1,
-                                                         received=decimal.Decimal(0.00000000),
+                                                         received=vout['value'],
                                                          transactions_out=0,
-                                                         sent=0.00000000)
+                                                         sent=decimal.Decimal(0.00000000))
                         db.session.add(address_summary)
                     else:
-                        # TODO - all of this
-                        address_summary_lookup.balance = decimal.Decimal(0.00000000)
-                        address_summary_lookup.transactions_in = 1
-                        address_summary_lookup.received = decimal.Decimal(0.00000000)
-                        address_summary_lookup.transaction_out = 1
-                        address_summary_lookup.sent = 1
-                        db.session.commit()
+                        the_balance = address_summary_lookup.balance
+                        commit_address_transaction_output = Addresses(address=the_address,
+                                                                      amount=vout['value'],
+                                                                      n=vout['n'],
+                                                                      block_height=block_height,
+                                                                      balance=the_balance + vout['value'],
+                                                                      block_hash=the_block['hash'],
+                                                                      the_time=the_block['time'],
+                                                                      transaction=this_transaction,
+                                                                      input=False,
+                                                                      output=True)
+                        db.session.add(commit_address_transaction_output)
+                        address_summary_lookup.balance += vout['value']
+                        address_summary_lookup.transactions_in += 1
+                        address_summary_lookup.received += vout['value']
+                        db.session.add(address_summary_lookup)
                     ###
                     tx_value_out += vout['value']
                     commit_transaction_out = TxOut(block_height=block_height,
@@ -137,16 +143,47 @@ def bulk_of_first_run_or_cron(name_of_flask_app, db, uniques, cryptocurrency, bl
                         prev_out_total_out += prevout_value
                         tx_value_in += prevout_value
                         prevout_address = this_prev_vin['scriptPubKey']['addresses'][0]
-                        commit_address_transaction_input = Addresses(address=prevout_address,
-                                                                     amount=-prevout_value,
-                                                                     n=vin_num,
-                                                                     block_height=block_height,
-                                                                     block_hash=the_block['hash'],
-                                                                     the_time=the_block['time'],
-                                                                     transaction=this_transaction,
-                                                                     input=True,
-                                                                     output=False)
-                        db.session.add(commit_address_transaction_input)
+
+                        address_summary_lookup = db.session.query(AddressSummary).filter_by(
+                            address=prevout_address).one_or_none()
+                        if address_summary_lookup is not None:
+                            the_new_balance = address_summary_lookup.balance - prevout_value
+                            commit_address_transaction_input = Addresses(address=prevout_address,
+                                                                         amount=-prevout_value,
+                                                                         n=vin_num,
+                                                                         block_height=block_height,
+                                                                         balance=the_new_balance,
+                                                                         block_hash=the_block['hash'],
+                                                                         the_time=the_block['time'],
+                                                                         transaction=this_transaction,
+                                                                         input=True,
+                                                                         output=False)
+                            db.session.add(commit_address_transaction_input)
+
+                            address_summary_lookup.balance -= prevout_value
+                            address_summary_lookup.transactions_out += 1
+                            address_summary_lookup.sent += prevout_value
+                            db.session.add(address_summary_lookup)
+                        else:
+                            # This shouldn't be a thing, since it would cause a negative balance.
+                            commit_address_transaction_input = Addresses(address=prevout_address,
+                                                                         amount=-prevout_value,
+                                                                         n=vin_num,
+                                                                         block_height=block_height,
+                                                                         balance=-prevout_value,
+                                                                         block_hash=the_block['hash'],
+                                                                         the_time=the_block['time'],
+                                                                         transaction=this_transaction,
+                                                                         input=True,
+                                                                         output=False)
+                            address_summary = AddressSummary(address=prevout_address,
+                                                             balance=-prevout_value,
+                                                             transactions_in=0,
+                                                             received=decimal.Decimal(0.00000000),
+                                                             transactions_out=1,
+                                                             sent=prevout_value)
+                            db.session.add(address_summary)
+
                         commit_transaction_in = TXIn(block_height=block_height,
                                                      txid=this_transaction,
                                                      n=number,

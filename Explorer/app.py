@@ -262,6 +262,7 @@ def address(the_address):
         if address_summary is not None:
             return render_template('address.html',
                                    address_info=address_lookup,
+                                   the_address_summary=address_summary,
                                    this_address=the_address,
                                    total_balance=address_summary.balance,
                                    total_received=address_summary.received,

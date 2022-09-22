@@ -21,6 +21,9 @@ class Addresses(db.Model):
     block_height = db.Column(db.Integer,
                              unique=False,
                              nullable=False)
+    balance = db.Column(db.Numeric,
+                        unique=False,
+                        nullable=False)
     block_hash = db.Column(db.String,
                            unique=False,
                            nullable=False)
