@@ -39,7 +39,7 @@
                 {% for each in the_transactions %}
                 <tr>
                     <td><a href="/tx/{{ each.txid }}">{{ each.txid[0:10] }}...</a></td>
-                    <td>{% if each.fee == 0 %}0.00000000{% else %}{{ each.fee }}{% endif %}</td>
+                    <td>{{ format_eight_zeroes(each.fee) }}</td>
                     <td>{{ each.size / 1000 }}</td>
                     {% if loop.index0 == 0 %}
                     <td>Generation: {{ each.total_out - transaction_fees }} + {{ formatted_transaction_fees }} total fees</td>

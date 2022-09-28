@@ -63,9 +63,11 @@ def create_app(the_csrf):
     # This appears to be an issue -- https://github.com/wtforms/flask-wtf/issues/521.
     # prep_application.config['REMEMBER_COOKIE_HTTPONLY'] = True
     #
+    # Enable this in production
     # prep_application.config['SESSION_COOKIE_HTTPONLY'] = True
     prep_application.config['SESSION_COOKIE_NAME'] = 'csrf_token'
     prep_application.config['SESSION_COOKIE_SAMESITE'] = 'Strict'
+    # Enable this in production
     # prep_application.config['SESSION_COOKIE_SECURE'] = True
     prep_application.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     prep_application.config['SQLALCHEMY_DATABASE_URI'] = database_uri
