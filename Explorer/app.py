@@ -256,7 +256,8 @@ def address(the_address):
     # No reason to waste an SQL lookup if we're being redirected from /address/ ^
     if the_address == 'INVALIDADDRESS':
         return render_template('404.html', error="Not a valid address"), 404
-    address_lookup = db.session.query(Addresses).filter_by(address=the_address).order_by(desc('block_height')).all()
+    the_page = request.args.get('page', default=1, type=int)
+    address_lookup = db.session.query(Addresses).filter_by(address=the_address).order_by(desc('block_height'))
     if address_lookup is None:
         return render_template('404.html', error="Not a valid address"), 404
     else:
@@ -344,8 +345,6 @@ def redirect_to_tx():
 
 @application.get("/tx/<transaction>/")
 def tx(transaction):
-    # TODO - Transactions actually need done
-    # Though, in order to finish this, addresses need done first
     check_transaction = db.session.query(TXs).filter_by(txid=transaction.lower()).first()
     if check_transaction is not None:
         coinbase = db.session.query(CoinbaseTXIn).filter_by(txid=transaction.lower()).one_or_none()
@@ -377,7 +376,7 @@ def api_index():
 
 @application.get("/api/addressbalance/")
 def redirect_to_api__address_balance():
-    return redirect(url_for('api__validate_address', address="INVALID_ADDRESS"))
+    return redirect(url_for('api__address_balance', the_address="INVALID_ADDRESS"))
 
 
 @application.get("/api/confirmations/")
@@ -392,30 +391,39 @@ def redirect_to_api__rawtx():
 
 @application.get("/api/receivedbyaddress/")
 def redirect_to_api__received_by_address():
-    return redirect(url_for('api__received_by_address', address="INVALID_ADDRESS"))
+    return redirect(url_for('api__received_by_address', the_address="INVALID_ADDRESS"))
 
 
 @application.get("/api/sentbyaddress/")
 def redirect_to_api__sent_by_address():
-    return redirect(url_for('api__sent_by_address', address="INVALID_ADDRESS"))
+    return redirect(url_for('api__sent_by_address', the_address="INVALID_ADDRESS"))
 
 
 @application.get("/api/validateaddress/")
 def redirect_to_api__validate_address():
-    return redirect(url_for('api__validate_address', address="INVALID_ADDRESS"))
+    return redirect(url_for('api__validate_address', the_address="INVALID_ADDRESS"))
 
 
 @application.get("/api/addressbalance/<the_address>/")
 def api__address_balance(the_address):
-    return make_response(jsonify({'message': the_address,
-                                  'error': 'todo'}), 200)
+    if the_address == "INVALID_ADDRESS":
+        return make_response(jsonify({'message': 'Hi there, did you mean to put in an address?',
+                                      'error': '404'}), 404)
+    address_lookup = db.session.query(AddressSummary).filter_by(address=the_address).first()
+    if address_lookup is None:
+        return make_response(jsonify({'message': 'This address is invalid',
+                                      'error': '404'}), 404)
+    else:
+        address_balance = address_lookup.balance
+        return make_response(jsonify({'message': address_balance,
+                                      'error': 'ok'}), 200)
 
 
 @application.get("/api/blockcount/")
 def api__block_count():
     most_recent_height = db.session.query(Blocks).order_by(desc('height')).first().height
     return make_response(jsonify({'message': most_recent_height,
-                                  'error': 'none'}), 200)
+                                  'error': 'ok'}), 200)
 
 
 @application.get("/api/confirmations/<userinput_block_height>/")
@@ -431,7 +439,7 @@ def api__confirmations(userinput_block_height):
                 latest_block_height = int(db.session.query(Blocks).order_by(desc('height')).first().height)
                 block_confirmations = (latest_block_height + 1) - user_block_height
                 return make_response(jsonify({'confirmations': block_confirmations,
-                                              'error': 'none'}), 200)
+                                              'error': 'ok'}), 200)
             else:
                 return make_response(jsonify({'message': 'This block hash/height is invalid',
                                               'error': 'invalid'}), 422)
@@ -445,7 +453,7 @@ def api__confirmations(userinput_block_height):
         if userinput_block_height in range(0, latest_block_height + 1):
             block_confirmations = (latest_block_height + 1) - userinput_block_height
             return make_response(jsonify({'confirmations': block_confirmations,
-                                          'error': 'none'}), 200)
+                                          'error': 'ok'}), 200)
         else:
             return make_response(jsonify({'message': 'This block hash/height is invalid',
                                           'error': 'invalid'}), 422)
@@ -455,7 +463,7 @@ def api__confirmations(userinput_block_height):
 def api__last_difficulty():
     latest_difficulty = float(db.session.query(Blocks).order_by(desc('height')).first().difficulty)
     return make_response(jsonify({'message': latest_difficulty,
-                                  'error': 'none'}), 200)
+                                  'error': 'ok'}), 200)
 
 
 @application.get("/api/mempool/")
@@ -482,39 +490,61 @@ def api__rawtx(transaction):
 
 @application.get("/api/receivedbyaddress/<the_address>/")
 def api__received_by_address(the_address):
-    return make_response(jsonify({'message': the_address,
-                                  'error': 'todo'}), 200)
+    if the_address == "INVALID_ADDRESS":
+        return make_response(jsonify({'message': 'Hi there, did you mean to put in an address?',
+                                      'error': '404'}), 404)
+    address_lookup = db.session.query(AddressSummary).filter_by(address=the_address).first()
+    if address_lookup is None:
+        return make_response(jsonify({'message': 'This address is invalid',
+                                      'error': '404'}), 404)
+    else:
+        address_received = address_lookup.received
+        return make_response(jsonify({'message': address_received,
+                                      'error': 'ok'}), 200)
 
 
 @application.get("/api/richlist/")
 def api__rich_list():
-    return make_response(jsonify({'message': 'todo',
-                                  'error': 'todo'}), 200)
+    the_top = db.session.query(AddressSummary).order_by(desc('balance')).limit(500)
+    return make_response(jsonify({'message': [{'address': x.address, 'balance': x.balance} for x in the_top],
+                                  'error': 'ok'}), 200)
 
 
 @application.get("/api/sentbyaddress/<the_address>/")
 def api__sent_by_address(the_address):
-    return make_response(jsonify({'message': the_address,
-                                  'error': 'todo'}), 200)
+    if the_address == "INVALID_ADDRESS":
+        return make_response(jsonify({'message': 'Hi there, did you mean to put in an address?',
+                                      'error': '404'}), 404)
+    address_lookup = db.session.query(AddressSummary).filter_by(address=the_address).first()
+    if address_lookup is None:
+        return make_response(jsonify({'message': 'This address is invalid',
+                                      'error': '404'}), 404)
+    else:
+        address_sent = address_lookup.received
+        return make_response(jsonify({'message': address_sent,
+                                      'error': 'ok'}), 200)
 
 
 @application.get("/api/totalcoins/")
 def api__total_coins():
     return make_response(jsonify({'message': float(cryptocurrency.gettxoutsetinfo()['total_amount']),
-                                  'error': 'none'}), 200)
+                                  'error': 'ok'}), 200)
 
 
 @application.get("/api/totaltransactions/")
 def api__total_transactions():
     return make_response(jsonify({'message': cryptocurrency.gettxoutsetinfo()['transactions'],
-                                  'error': 'none'}), 200)
+                                  'error': 'ok'}), 200)
 
 
 @application.get("/api/validateaddress/<the_address>/")
 def api__validate_address(the_address):
+    if the_address == "INVALID_ADDRESS":
+        return make_response(jsonify({'message': 'Hi there, did you mean to put in an address?',
+                                      'error': '404'}), 404)
     if cryptocurrency.validateaddress(the_address)['isvalid']:
         return make_response(jsonify({'message': 'valid',
-                                      'error': 'none'}), 200)
+                                      'error': 'ok'}), 200)
     else:
         return make_response(jsonify({'message': 'invalid',
                                       'error': 'this string cannot be verified as an address'}), 422)

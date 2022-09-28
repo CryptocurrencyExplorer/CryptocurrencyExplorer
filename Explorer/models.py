@@ -20,7 +20,8 @@ class Addresses(db.Model):
                   nullable=False)
     block_height = db.Column(db.Integer,
                              unique=False,
-                             nullable=False)
+                             nullable=False,
+                             index=True)
     balance = db.Column(db.Numeric,
                         unique=False,
                         nullable=False)

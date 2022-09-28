@@ -3,7 +3,7 @@
 
 {% block head %}{{ super() }}{% endblock %}
 
-{% block additional_text %}Cryptocurrency Explorer{% endblock %}
+{% block additional_text %}{% if config.COIN_NAME != "CryptocurrencyExplorerCoin" %}{{ config.COIN_NAME }} Explorer{% else %}Cryptocurrency Explorer{% endif %}{% endblock %}
 
 {% block the_form %}{% endblock %}
 
