@@ -462,6 +462,17 @@ def api__confirmations(userinput_block_height):
                                           'error': 'invalid'}), 422)
 
 
+@application.get("/api/connections/")
+def api__connections():
+    try:
+        total_connections = cryptocurrency.getconnectioncount()
+    except JSONRPCException:
+        return make_response(jsonify({'message': 'There was a JSON error. Try again later',
+                                      'error': 'invalid'}), 422)
+    else:
+        return make_response(jsonify(total_connections), 200)
+
+
 @application.get("/api/lastdifficulty/")
 def api__last_difficulty():
     latest_difficulty = float(db.session.query(Blocks).order_by(desc('height')).first().difficulty)
