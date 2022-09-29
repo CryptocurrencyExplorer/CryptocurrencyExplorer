@@ -382,14 +382,6 @@ def redirect_to_api__address_balance():
     return redirect(url_for('api__address_balance', the_address="INVALID_ADDRESS"))
 
 
-@application.get("/api/busiestaddresses/")
-def api__busiest_addresses():
-    busiest_sent = db.session.query(AddressSummary).order_by(desc('transactions_out')).limit(250)
-    busiest_received = db.session.query(AddressSummary).order_by(desc('transactions_in')).limit(250)
-    return make_response(jsonify({'message': [{'address': x.address, 'balance': x.balance} for x in busiest_sent],
-                                  'error': 'ok'}), 200)
-
-
 @application.get("/api/confirmations/")
 def redirect_to_api__confirmations():
     return redirect(url_for('api__confirmations', userinput_block_height="0"))
