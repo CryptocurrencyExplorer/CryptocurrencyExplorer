@@ -257,7 +257,10 @@ def address(the_address):
     if the_address == 'INVALIDADDRESS':
         return render_template('404.html', error="Not a valid address"), 404
     the_page = request.args.get('page', default=1, type=int)
-    address_lookup = db.session.query(Addresses).filter_by(address=the_address).order_by(desc('block_height'))
+    address_lookup = db.session.query(Addresses).filter_by(address=the_address).order_by(desc('id')).paginate(the_page,
+                                                                                                              per_page=1000,
+                                                                                                              error_out=True,
+                                                                                                              max_per_page=1000)
     if address_lookup is None:
         return render_template('404.html', error="Not a valid address"), 404
     else:
@@ -377,6 +380,14 @@ def api_index():
 @application.get("/api/addressbalance/")
 def redirect_to_api__address_balance():
     return redirect(url_for('api__address_balance', the_address="INVALID_ADDRESS"))
+
+
+@application.get("/api/busiestaddresses/")
+def api__busiest_addresses():
+    busiest_sent = db.session.query(AddressSummary).order_by(desc('transactions_out')).limit(250)
+    busiest_received = db.session.query(AddressSummary).order_by(desc('transactions_in')).limit(250)
+    return make_response(jsonify({'message': [{'address': x.address, 'balance': x.balance} for x in busiest_sent],
+                                  'error': 'ok'}), 200)
 
 
 @application.get("/api/confirmations/")
