@@ -257,10 +257,10 @@ def address(the_address):
     if the_address == 'INVALIDADDRESS':
         return render_template('404.html', error="Not a valid address"), 404
     the_page = request.args.get('page', default=1, type=int)
-    address_lookup = db.session.query(Addresses).filter_by(address=the_address).order_by(desc('id')).paginate(the_page,
-                                                                                                              per_page=1000,
-                                                                                                              error_out=True,
-                                                                                                              max_per_page=1000)
+    address_lookup = db.session.query(Addresses).filter_by(address=the_address).order_by(Addresses.id).paginate(the_page,
+                                                                                                                per_page=1000,
+                                                                                                                error_out=True,
+                                                                                                                max_per_page=1000)
     if address_lookup is None:
         return render_template('404.html', error="Not a valid address"), 404
     else:
