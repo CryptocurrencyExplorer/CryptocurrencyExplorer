@@ -1,4 +1,3 @@
-# ~/venv/bin/pip install Flask Flask-SQLALchemy Flask-WTF gunicorn psycopg2-binary python-bitcoinrpc Werkzeug
 # apt install postgresql postgresql-client
 # ----------------------------------------------
 # Use Python 3.3+ because of `decimal` issues:
