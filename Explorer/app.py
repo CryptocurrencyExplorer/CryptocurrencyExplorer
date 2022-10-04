@@ -307,7 +307,6 @@ def address(the_address):
                     the_offset = 0
                 else:
                     the_offset = int((the_page - 1) * 1000)
-                application.logger.error(f"offset: {the_offset}")
                 address_limited = db.session.query(Addresses).filter_by(address=the_address).order_by(desc(Addresses.id)).limit(1000).offset(the_offset)
                 return render_template('address.html',
                                        address_info=address_limited,
