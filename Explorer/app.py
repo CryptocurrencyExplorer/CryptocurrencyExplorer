@@ -160,7 +160,7 @@ def robots():
 class SearchForm(FlaskForm):
     search = StringField('Search',
                          validators=[DataRequired(), Length(min=1, max=64)],
-                         render_kw={"placeholder": "Search address, blocks, transactions, pubkey hash"})
+                         render_kw={"placeholder": "Search address, blocks, transactions"})
     submit = SubmitField('Submit')
 
 
