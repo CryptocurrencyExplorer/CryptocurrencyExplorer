@@ -195,13 +195,13 @@ def index():
             try:
                 input_data = int(form.search.data)
             except ValueError:
-                if len(input_data) >= 6:
+                if len(form.search.data) >= 6:
                     block_hash_lookup = db.session.query(Blocks).filter_by(hash=form.search.data).one_or_none()
                     if block_hash_lookup is not None:
                         return redirect(url_for('block', block_hash_or_height=form.search.data))
                     else:
                         if cryptocurrency.validateaddress(form.search.data)['isvalid']:
-                            return redirect(url_for('api__validate_address', address=form.search.data))
+                            return redirect(url_for('address', the_address=form.search.data))
                         else:
                             return render_template('index.html',
                                                    search_validated=False,
