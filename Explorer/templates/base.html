@@ -30,7 +30,7 @@
             <div class="formtest">
                 <form method="post">
                     <p>
-                        {{ form.hidden_tag() }}
+                        {{ form.csrf_token }}
                         {{ form.search(size=64, maxlength=64) }}
                         {{ form.submit() }}
                         <br />Address or hash search requires at least the first 6 characters.
