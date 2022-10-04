@@ -35,7 +35,9 @@
                         {{ form.submit() }}
                         <br />Address or hash search requires at least the first 6 characters.
                         <br />Count is limited to a maximum of 500 blocks.
-                        {% if search_validated is defined %}{% if not search_validated %}<br /><b>Could not find an address, block, transaction, or anything related to this search</b>{% endif %}{% endif %}
+                        {% if search_validated is defined %}{% if not search_validated %}<br /><b>Could not find an address, block, transaction, or anything related to this search.</b>{% endif %}{% endif %}
+                        {% if input_too_short is defined %}{% if input_too_short %}<br /><b>Your input wasn't 6 characters or more.</b>{% endif %}{% endif %}
+
                     </p>
                 </form>
             </div>

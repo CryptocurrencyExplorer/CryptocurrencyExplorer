@@ -195,26 +195,27 @@ def index():
             try:
                 input_data = int(form.search.data)
             except ValueError:
-                try:
-                    if db.session.query(Blocks).filter_by(hash=form.search.data).first():
+                if len(input_data) >= 6:
+                    block_hash_lookup = db.session.query(Blocks).filter_by(hash=form.search.data).one_or_none()
+                    if block_hash_lookup is not None:
                         return redirect(url_for('block', block_hash_or_height=form.search.data))
-                except JSONRPCException:
-                    if cryptocurrency.validateaddress(form.search.data)['isvalid']:
-                        return redirect(url_for('api__validate_address', address=form.search.data))
                     else:
-                        return render_template('index.html',
-                                               search_validated=False,
-                                               form=form,
-                                               front_page_blocks=front_page_items,
-                                               format_time=format_time,
-                                               count=count,
-                                               hi=hi,
-                                               latest_block=latest_block_height,
-                                               chain_age=chain_age,
-                                               genesis_time=genesis_timestamp), 200
+                        if cryptocurrency.validateaddress(form.search.data)['isvalid']:
+                            return redirect(url_for('api__validate_address', address=form.search.data))
+                        else:
+                            return render_template('index.html',
+                                                   search_validated=False,
+                                                   form=form,
+                                                   front_page_blocks=front_page_items,
+                                                   format_time=format_time,
+                                                   count=count,
+                                                   hi=hi,
+                                                   latest_block=latest_block_height,
+                                                   chain_age=chain_age,
+                                                   genesis_time=genesis_timestamp), 200
                 else:
                     return render_template('index.html',
-                                           search_validated=False,
+                                           input_too_short=True,
                                            form=form,
                                            front_page_blocks=front_page_items,
                                            format_time=format_time,
@@ -395,7 +396,10 @@ def api_index():
 
 @application.get("/api/addressbalance/")
 def redirect_to_api__address_balance():
-    return redirect(url_for('api__address_balance', the_address="INVALID_ADDRESS"))
+    if coin_uniques['burn_address'] is not None:
+        return redirect(url_for('api__address_balance', the_address=coin_uniques['burn_address']))
+    else:
+        return redirect(url_for('api__address_balance', the_address='INVALIDADDRESS'))
 
 
 @application.get("/api/confirmations/")
@@ -410,17 +414,26 @@ def redirect_to_api__rawtx():
 
 @application.get("/api/receivedbyaddress/")
 def redirect_to_api__received_by_address():
-    return redirect(url_for('api__received_by_address', the_address="INVALID_ADDRESS"))
+    if coin_uniques['burn_address'] is not None:
+        return redirect(url_for('api__received_by_address', the_address=coin_uniques['burn_address']))
+    else:
+        return redirect(url_for('api__received_by_address', the_address='INVALIDADDRESS'))
 
 
 @application.get("/api/sentbyaddress/")
 def redirect_to_api__sent_by_address():
-    return redirect(url_for('api__sent_by_address', the_address="INVALID_ADDRESS"))
+    if coin_uniques['burn_address'] is not None:
+        return redirect(url_for('api__sent_by_address', the_address=coin_uniques['burn_address']))
+    else:
+        return redirect(url_for('api__sent_by_address', the_address='INVALIDADDRESS'))
 
 
 @application.get("/api/validateaddress/")
 def redirect_to_api__validate_address():
-    return redirect(url_for('api__validate_address', the_address="INVALID_ADDRESS"))
+    if coin_uniques['burn_address'] is not None:
+        return redirect(url_for('api__validate_address', the_address=coin_uniques['burn_address']))
+    else:
+        return redirect(url_for('api__validate_address', the_address='INVALIDADDRESS'))
 
 
 @application.get("/api/addressbalance/<the_address>/")
