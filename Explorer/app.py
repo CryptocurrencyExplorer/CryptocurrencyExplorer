@@ -278,23 +278,48 @@ def address(the_address):
     if the_address == 'INVALIDADDRESS':
         return render_template('404.html', error="Not a valid address"), 404
     the_page = request.args.get('page', default=1, type=int)
-    address_lookup = db.session.query(Addresses).filter_by(address=the_address).order_by(Addresses.id).paginate(the_page,
-                                                                                                                per_page=1000,
-                                                                                                                error_out=True,
-                                                                                                                max_per_page=1000)
+    # Realistically there isn't going to be an address with 1,000,000,000 separate transactions.
+    # If someone tries to go to page 1000000 or above, 403 them for strange behavior.
+    # This is also done earlier to prevent an SQL lookup.
+    if the_page >= 1000000:
+        return render_template('404.html', error="Doing something weird?"), 403
+    address_lookup = db.session.query(Addresses).filter_by(address=the_address).order_by(Addresses.id)
     if address_lookup is None:
         return render_template('404.html', error="Not a valid address"), 404
     else:
+        address_count = address_lookup.count()
+        total_pages = int(address_count / 1000)
+        if the_page > total_pages:
+            the_page = total_pages
         address_summary = db.session.query(AddressSummary).filter_by(address=the_address).one_or_none()
         if address_summary is not None:
-            return render_template('address.html',
-                                   address_info=address_lookup,
-                                   the_address_summary=address_summary,
-                                   this_address=the_address,
-                                   total_balance=address_summary.balance,
-                                   total_received=address_summary.received,
-                                   total_sent=address_summary.sent,
-                                   which_currency=coin_uniques["shortened"]), 200
+            if total_pages == 1:
+                return render_template('address.html',
+                                       address_info=address_lookup,
+                                       the_address_summary=address_summary,
+                                       this_address=the_address,
+                                       total_balance=address_summary.balance,
+                                       total_received=address_summary.received,
+                                       total_sent=address_summary.sent,
+                                       which_currency=coin_uniques["shortened"]), 200
+            else:
+                if the_page == 1:
+                    the_offset = 0
+                else:
+                    the_offset = int((the_page - 1) * 1000)
+                application.logger.error(f"offset: {the_offset}")
+                address_limited = db.session.query(Addresses).filter_by(address=the_address).order_by(desc(Addresses.id)).limit(1000).offset(the_offset)
+                return render_template('address.html',
+                                       address_info=address_limited,
+                                       the_address_summary=address_summary,
+                                       this_address=the_address,
+                                       total_balance=address_summary.balance,
+                                       total_received=address_summary.received,
+                                       total_sent=address_summary.sent,
+                                       the_page=the_page,
+                                       total_pages=total_pages,
+                                       which_currency=coin_uniques["shortened"]), 200
+
         else:
             return render_template('404.html', error="Not a valid address"), 404
 

@@ -17,14 +17,14 @@
                 Transactions out: {{ the_address_summary.transactions_out }}<br />
                 Sent: {{ total_sent }} {{ which_currency }}<br />
             </p>
-{% if address_info.pages != 1 %}
-            <h4>Page {{ address_info.page }} / {{ address_info.pages }}</h4> {% if address_info.page != 1 %}<a href="/address/{{ this_address }}?page=1">&#60;&#60;</a>{% else %}&#60;&#60;{% endif %} {% if address_info.page != 1 %}<a href="/address/{{ this_address }}?page={{ address_info.page - 1 }}">&#60;</a>{% else %}&#60;{% endif %} {% if address_info.page != address_info.pages %}<a href="/address/{{ this_address }}?page={{ address_info.page + 1 }}">&#62;</a>{% else %}&#62;{% endif %} {% if address_info.page != address_info.pages %}<a href="/address/{{ this_address }}?page={{ address_info.pages }}">&#62;&#62;</a>{% else %}&#62;&#62;{% endif %}
+{% if total_pages != 1 %}
+            <h4>Page {{ the_page }} / {{ total_pages }}</h4> {% if the_page != 1 %}<a href="/address/{{ this_address }}?page=1">&#60;&#60;</a>{% else %}&#60;&#60;{% endif %} {% if the_page != 1 %}<a href="/address/{{ this_address }}?page={{ the_page - 1 }}">&#60;</a>{% else %}&#60;{% endif %} {% if the_page != total_pages %}<a href="/address/{{ this_address }}?page={{ the_page + 1 }}">&#62;</a>{% else %}&#62;{% endif %} {% if the_page != total_pages %}<a href="/address/{{ this_address }}?page={{ total_pages }}">&#62;&#62;</a>{% else %}&#62;&#62;{% endif %}
 {% endif %}
 
             <h3>Transactions</h3>
             <table class="table addrhist">
                 <tr><th>Transaction</th><th>Block</th><th>Time (UTC)</th><th>Amount</th><th>Balance</th><th>Currency</th></tr>
-                {% for each in address_info.items %}
+                {% for each in address_info %}
                 <tr>
                     <td><a href="/tx/{{ each.transaction }}">{{ each.transaction[0:10] }}...</a></td>
                     <td><a href="/block/{{ each.block_hash }}">{{ each.block_height }}</a></td>
@@ -35,7 +35,7 @@
                 </tr>
                 {% endfor %}
             </table>
-{% if address_info.pages != 1 %}            <h4>Page {{ address_info.page }} / {{ address_info.pages }}</h4> {% if address_info.page != 1 %}<a href="/address/{{ this_address }}?page=1">&#60;&#60;</a>{% else %}&#60;&#60;{% endif %} {% if address_info.page != 1 %}<a href="/address/{{ this_address }}?page={{ address_info.page - 1 }}">&#60;</a>{% else %}&#60;{% endif %} {% if address_info.page != address_info.pages %}<a href="/address/{{ this_address }}?page={{ address_info.page + 1 }}">&#62;</a>{% else %}&#62;{% endif %} {% if address_info.page != address_info.pages %}<a href="/address/{{ this_address }}?page={{ address_info.pages }}">&#62;&#62;</a>{% else %}&#62;&#62;{% endif %}
+{% if total_pages != 1 %}            <h4>Page {{ the_page }} / {{ total_pages }}</h4> {% if the_page != 1 %}<a href="/address/{{ this_address }}?page=1">&#60;&#60;</a>{% else %}&#60;&#60;{% endif %} {% if the_page != 1 %}<a href="/address/{{ this_address }}?page={{ the_page - 1 }}">&#60;</a>{% else %}&#60;{% endif %} {% if the_page != total_pages %}<a href="/address/{{ this_address }}?page={{ the_page + 1 }}">&#62;</a>{% else %}&#62;{% endif %} {% if the_page != total_pages %}<a href="/address/{{ this_address }}?page={{ total_pages }}">&#62;&#62;</a>{% else %}&#62;&#62;{% endif %}
 {% endif %}
 
 {% endblock %}
