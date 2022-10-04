@@ -164,22 +164,6 @@ class SearchForm(FlaskForm):
     submit = SubmitField('Submit')
 
 
-def validate_search(search_term):
-    try:
-        if int(search_term) in range(0, cryptocurrency.getblockcount() + 1):
-            return redirect(url_for('block', block_hash_or_height=int(search_term)))
-    except ValueError:
-        try:
-            if cryptocurrency.getblock(search_term)['hash']:
-                return redirect(url_for('block', block_hash_or_height=search_term))
-        except JSONRPCException:
-            if cryptocurrency.validateaddress(search_term)['isvalid']:
-                return redirect(url_for('api__validate_address', address=search_term))
-            else:
-                return make_response(jsonify({'message': 'todo',
-                                              'error': 'todo'}), 200)
-
-
 @application.get("/")
 @application.post("/")
 def index():
@@ -206,40 +190,73 @@ def index():
     front_page_items = db.session.query(Blocks).where(Blocks.height <= hi).order_by(desc('height')).limit(count)
     genesis_timestamp = coin_uniques['genesis']['timestamp']
 
-    if request.method == 'POST' and form.validate_on_submit():
-        try:
-            input_data = int(form.search.data)
-        except ValueError:
+    if request.method == 'POST':
+        if form.validate_on_submit():
             try:
-                if db.session.query(Blocks).filter_by(hash=form.search.data).first():
-                    return redirect(url_for('block', block_hash_or_height=form.search.data))
-            except JSONRPCException:
-                if cryptocurrency.validateaddress(form.search.data)['isvalid']:
-                    return redirect(url_for('api__validate_address', address=form.search.data))
+                input_data = int(form.search.data)
+            except ValueError:
+                try:
+                    if db.session.query(Blocks).filter_by(hash=form.search.data).first():
+                        return redirect(url_for('block', block_hash_or_height=form.search.data))
+                except JSONRPCException:
+                    if cryptocurrency.validateaddress(form.search.data)['isvalid']:
+                        return redirect(url_for('api__validate_address', address=form.search.data))
+                    else:
+                        return render_template('index.html',
+                                               search_validated=False,
+                                               form=form,
+                                               front_page_blocks=front_page_items,
+                                               format_time=format_time,
+                                               count=count,
+                                               hi=hi,
+                                               latest_block=latest_block_height,
+                                               chain_age=chain_age,
+                                               genesis_time=genesis_timestamp), 200
                 else:
-                    return redirect(url_for('index'))
-        else:
-            if input_data in range(0, latest_block_height + 1):
-                return redirect(url_for('block', block_hash_or_height=input_data))
+                    return render_template('index.html',
+                                           search_validated=False,
+                                           form=form,
+                                           front_page_blocks=front_page_items,
+                                           format_time=format_time,
+                                           count=count,
+                                           hi=hi,
+                                           latest_block=latest_block_height,
+                                           chain_age=chain_age,
+                                           genesis_time=genesis_timestamp), 200
             else:
-                return render_template('index.html',
-                                       form=form,
-                                       front_page_blocks=front_page_items,
-                                       format_time=format_time,
-                                       count=count,
-                                       hi=hi,
-                                       latest_block=latest_block_height,
-                                       chain_age=chain_age,
-                                       genesis_time=genesis_timestamp), 200
-    return render_template('index.html',
-                           form=form,
-                           front_page_blocks=front_page_items,
-                           format_time=format_time,
-                           count=count,
-                           hi=hi,
-                           latest_block=latest_block_height,
-                           chain_age=chain_age,
-                           genesis_time=genesis_timestamp), 200
+                if input_data in range(0, latest_block_height + 1):
+                    return redirect(url_for('block', block_hash_or_height=input_data))
+                else:
+                    return render_template('index.html',
+                                           search_validated=False,
+                                           form=form,
+                                           front_page_blocks=front_page_items,
+                                           format_time=format_time,
+                                           count=count,
+                                           hi=hi,
+                                           latest_block=latest_block_height,
+                                           chain_age=chain_age,
+                                           genesis_time=genesis_timestamp), 200
+        else:
+            return render_template('index.html',
+                                   form=form,
+                                   front_page_blocks=front_page_items,
+                                   format_time=format_time,
+                                   count=count,
+                                   hi=hi,
+                                   latest_block=latest_block_height,
+                                   chain_age=chain_age,
+                                   genesis_time=genesis_timestamp), 200
+    elif request.method == 'GET':
+        return render_template('index.html',
+                               form=form,
+                               front_page_blocks=front_page_items,
+                               format_time=format_time,
+                               count=count,
+                               hi=hi,
+                               latest_block=latest_block_height,
+                               chain_age=chain_age,
+                               genesis_time=genesis_timestamp), 200
 
 
 @application.get("/address/")
