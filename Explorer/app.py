@@ -203,16 +203,20 @@ def index():
                         if cryptocurrency.validateaddress(form.search.data)['isvalid']:
                             return redirect(url_for('address', the_address=form.search.data))
                         else:
-                            return render_template('index.html',
-                                                   search_validated=False,
-                                                   form=form,
-                                                   front_page_blocks=front_page_items,
-                                                   format_time=format_time,
-                                                   count=count,
-                                                   hi=hi,
-                                                   latest_block=latest_block_height,
-                                                   chain_age=chain_age,
-                                                   genesis_time=genesis_timestamp), 200
+                            tx_lookup = db.session.query(TXs).filter_by(txid=form.search.data.lower()).one_or_none()
+                            if tx_lookup is None:
+                                return render_template('index.html',
+                                                       search_validated=False,
+                                                       form=form,
+                                                       front_page_blocks=front_page_items,
+                                                       format_time=format_time,
+                                                       count=count,
+                                                       hi=hi,
+                                                       latest_block=latest_block_height,
+                                                       chain_age=chain_age,
+                                                       genesis_time=genesis_timestamp), 200
+                            else:
+                                return redirect(url_for('tx', transaction=form.search.data))
                 else:
                     return render_template('index.html',
                                            input_too_short=True,
