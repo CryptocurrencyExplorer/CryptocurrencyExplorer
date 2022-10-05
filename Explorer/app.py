@@ -4,6 +4,7 @@
 # https://docs.sqlalchemy.org/en/14/core/type_basics.html#sqlalchemy.types.Numeric
 import datetime
 import logging
+import math
 import sys
 from decimal import Decimal
 from logging.handlers import RotatingFileHandler
@@ -283,16 +284,16 @@ def address(the_address):
     # This is also done earlier to prevent an SQL lookup.
     if the_page >= 1000000:
         return render_template('404.html', error="Doing something weird?"), 403
-    address_lookup = db.session.query(Addresses).filter_by(address=the_address).order_by(Addresses.id)
+    address_lookup = db.session.query(Addresses).filter_by(address=the_address).order_by(desc(Addresses.id))
     if address_lookup is None:
         return render_template('404.html', error="Not a valid address"), 404
     else:
-        address_count = address_lookup.count()
-        total_pages = int(address_count / 1000)
-        if the_page > total_pages:
-            the_page = total_pages
         address_summary = db.session.query(AddressSummary).filter_by(address=the_address).one_or_none()
         if address_summary is not None:
+            address_count = address_summary.transactions_in + address_summary.transactions_out
+            total_pages = math.ceil(address_count / 1000)
+            if the_page > total_pages:
+                the_page = total_pages
             if total_pages == 1:
                 return render_template('address.html',
                                        address_info=address_lookup,
@@ -307,7 +308,7 @@ def address(the_address):
                     the_offset = 0
                 else:
                     the_offset = int((the_page - 1) * 1000)
-                address_limited = db.session.query(Addresses).filter_by(address=the_address).order_by(desc(Addresses.id)).limit(1000).offset(the_offset)
+                address_limited = address_lookup.limit(1000).offset(the_offset)
                 return render_template('address.html',
                                        address_info=address_limited,
                                        the_address_summary=address_summary,
