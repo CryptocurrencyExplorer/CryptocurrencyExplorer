@@ -273,7 +273,7 @@ def redirect_to_address():
         return redirect(url_for('address', the_address='INVALIDADDRESS'))
 
 
-@application.get("/address/<the_address>/")
+@application.get("/address/<the_address>")
 def address(the_address):
     # No reason to waste an SQL lookup if we're being redirected from /address/ ^
     if the_address == 'INVALIDADDRESS':
@@ -284,45 +284,41 @@ def address(the_address):
     # This is also done earlier to prevent an SQL lookup.
     if the_page >= 1000000:
         return render_template('404.html', error="Doing something weird?"), 403
-    address_lookup = db.session.query(Addresses).filter_by(address=the_address).order_by(desc(Addresses.id))
-    if address_lookup is None:
+    address_summary = db.session.query(AddressSummary).filter_by(address=the_address).one_or_none()
+    if address_summary is None:
         return render_template('404.html', error="Not a valid address"), 404
     else:
-        address_summary = db.session.query(AddressSummary).filter_by(address=the_address).one_or_none()
-        if address_summary is not None:
-            address_count = address_summary.transactions_in + address_summary.transactions_out
-            total_pages = math.ceil(address_count / 1000)
-            if the_page > total_pages:
-                the_page = total_pages
-            if total_pages == 1:
-                return render_template('address.html',
-                                       address_info=address_lookup,
-                                       the_address_summary=address_summary,
-                                       this_address=the_address,
-                                       total_balance=address_summary.balance,
-                                       total_received=address_summary.received,
-                                       total_sent=address_summary.sent,
-                                       total_pages=total_pages,
-                                       which_currency=coin_uniques["shortened"]), 200
-            else:
-                if the_page == 1:
-                    the_offset = 0
-                else:
-                    the_offset = int((the_page - 1) * 1000)
-                address_limited = address_lookup.limit(1000).offset(the_offset)
-                return render_template('address.html',
-                                       address_info=address_limited,
-                                       the_address_summary=address_summary,
-                                       this_address=the_address,
-                                       total_balance=address_summary.balance,
-                                       total_received=address_summary.received,
-                                       total_sent=address_summary.sent,
-                                       the_page=the_page,
-                                       total_pages=total_pages,
-                                       which_currency=coin_uniques["shortened"]), 200
-
+        address_count = address_summary.transactions_in + address_summary.transactions_out
+        total_pages = math.ceil(address_count / 1000)
+        if the_page > total_pages:
+            the_page = total_pages
+        if total_pages == 1:
+            address_lookup = db.session.query(Addresses).filter_by(address=the_address).order_by(desc(Addresses.id))
+            return render_template('address.html',
+                                   address_info=address_lookup,
+                                   the_address_summary=address_summary,
+                                   this_address=the_address,
+                                   total_balance=address_summary.balance,
+                                   total_received=address_summary.received,
+                                   total_sent=address_summary.sent,
+                                   total_pages=total_pages,
+                                   which_currency=coin_uniques["shortened"]), 200
         else:
-            return render_template('404.html', error="Not a valid address"), 404
+            if the_page == 1:
+                the_offset = 0
+            else:
+                the_offset = int((the_page - 1) * 1000)
+            address_limited = db.session.query(Addresses).filter_by(address=the_address).order_by(desc(Addresses.id)).limit(1000).offset(the_offset)
+            return render_template('address.html',
+                                   address_info=address_limited,
+                                   the_address_summary=address_summary,
+                                   this_address=the_address,
+                                   total_balance=address_summary.balance,
+                                   total_received=address_summary.received,
+                                   total_sent=address_summary.sent,
+                                   the_page=the_page,
+                                   total_pages=total_pages,
+                                   which_currency=coin_uniques["shortened"]), 200
 
 
 @application.get("/block/")
@@ -330,7 +326,7 @@ def redirect_to_block():
     return redirect(url_for('block', block_hash_or_height="0"))
 
 
-@application.get("/block/<block_hash_or_height>/")
+@application.get("/block/<block_hash_or_height>")
 def block(block_hash_or_height):
     try:
         the_block_height = int(block_hash_or_height)
@@ -393,7 +389,7 @@ def redirect_to_tx():
     return redirect(url_for('tx', transaction="INVALID_TRANSACTION"))
 
 
-@application.get("/tx/<transaction>/")
+@application.get("/tx/<transaction>")
 def tx(transaction):
     check_transaction = db.session.query(TXs).filter_by(txid=transaction.lower()).first()
     if check_transaction is not None:
@@ -432,7 +428,7 @@ def redirect_to_api__address_balance():
         return redirect(url_for('api__address_balance', the_address='INVALIDADDRESS'))
 
 
-@application.get("/api/confirmations/")
+@application.get("/api/confirmations")
 def redirect_to_api__confirmations():
     return redirect(url_for('api__confirmations', userinput_block_height="0"))
 
@@ -466,7 +462,7 @@ def redirect_to_api__validate_address():
         return redirect(url_for('api__validate_address', the_address='INVALIDADDRESS'))
 
 
-@application.get("/api/addressbalance/<the_address>/")
+@application.get("/api/addressbalance/<the_address>")
 def api__address_balance(the_address):
     if the_address == "INVALID_ADDRESS":
         return make_response(jsonify({'message': 'Hi there, did you mean to put in an address?',
@@ -481,14 +477,14 @@ def api__address_balance(the_address):
                                       'error': 'ok'}), 200)
 
 
-@application.get("/api/blockcount/")
+@application.get("/api/blockcount")
 def api__block_count():
     most_recent_height = db.session.query(Blocks).order_by(desc('height')).first().height
     return make_response(jsonify({'message': most_recent_height,
                                   'error': 'ok'}), 200)
 
 
-@application.get("/api/confirmations/<userinput_block_height>/")
+@application.get("/api/confirmations/<userinput_block_height>")
 def api__confirmations(userinput_block_height):
     try:
         userinput_block_height = int(userinput_block_height)
@@ -521,7 +517,7 @@ def api__confirmations(userinput_block_height):
                                           'error': 'invalid'}), 422)
 
 
-@application.get("/api/connections/")
+@application.get("/api/connections")
 def api__connections():
     try:
         total_connections = cryptocurrency.getconnectioncount()
@@ -533,14 +529,14 @@ def api__connections():
                                       'error': 'ok'}), 200)
 
 
-@application.get("/api/lastdifficulty/")
+@application.get("/api/lastdifficulty")
 def api__last_difficulty():
     latest_difficulty = float(db.session.query(Blocks).order_by(desc('height')).first().difficulty)
     return make_response(jsonify({'message': latest_difficulty,
                                   'error': 'ok'}), 200)
 
 
-@application.get("/api/mempool/")
+@application.get("/api/mempool")
 def api__mempool():
     try:
         the_mempool = cryptocurrency.getrawmempool(True)
@@ -551,7 +547,7 @@ def api__mempool():
         return make_response(jsonify(the_mempool), 200)
 
 
-@application.get("/api/rawtx/<transaction>/")
+@application.get("/api/rawtx/<transaction>")
 def api__rawtx(transaction):
     if transaction == "INVALIDTRANSACTION":
         return make_response(jsonify({'message': 'This transaction is invalid',
@@ -565,7 +561,7 @@ def api__rawtx(transaction):
         return make_response(jsonify(the_transaction), 200)
 
 
-@application.get("/api/receivedbyaddress/<the_address>/")
+@application.get("/api/receivedbyaddress/<the_address>")
 def api__received_by_address(the_address):
     if the_address == "INVALID_ADDRESS":
         return make_response(jsonify({'message': 'Hi there, did you mean to put in an address?',
@@ -580,7 +576,7 @@ def api__received_by_address(the_address):
                                       'error': 'ok'}), 200)
 
 
-@application.get("/api/richlist/")
+@application.get("/api/richlist")
 def api__rich_list():
     the_top = db.session.query(AddressSummary).order_by(desc('balance')).limit(500)
     the_rich_list = {}
@@ -590,7 +586,7 @@ def api__rich_list():
                                   'error': 'ok'}), 200)
 
 
-@application.get("/api/sentbyaddress/<the_address>/")
+@application.get("/api/sentbyaddress/<the_address>")
 def api__sent_by_address(the_address):
     if the_address == "INVALID_ADDRESS":
         return make_response(jsonify({'message': 'Hi there, did you mean to put in an address?',
@@ -605,19 +601,19 @@ def api__sent_by_address(the_address):
                                       'error': 'ok'}), 200)
 
 
-@application.get("/api/totalcoins/")
+@application.get("/api/totalcoins")
 def api__total_coins():
     return make_response(jsonify({'message': float(cryptocurrency.gettxoutsetinfo()['total_amount']),
                                   'error': 'ok'}), 200)
 
 
-@application.get("/api/totaltransactions/")
+@application.get("/api/totaltransactions")
 def api__total_transactions():
     return make_response(jsonify({'message': cryptocurrency.gettxoutsetinfo()['transactions'],
                                   'error': 'ok'}), 200)
 
 
-@application.get("/api/validateaddress/<the_address>/")
+@application.get("/api/validateaddress/<the_address>")
 def api__validate_address(the_address):
     if the_address == "INVALID_ADDRESS":
         return make_response(jsonify({'message': 'Hi there, did you mean to put in an address?',
