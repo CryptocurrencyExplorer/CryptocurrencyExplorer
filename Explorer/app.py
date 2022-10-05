@@ -439,7 +439,7 @@ def redirect_to_api__confirmations():
 
 @application.get("/api/rawtx/")
 def redirect_to_api__rawtx():
-    return redirect(url_for('api__rawtx', transaction=""))
+    return redirect(url_for('api__rawtx', transaction="INVALIDTRANSACTION"))
 
 
 @application.get("/api/receivedbyaddress/")
@@ -553,6 +553,9 @@ def api__mempool():
 
 @application.get("/api/rawtx/<transaction>/")
 def api__rawtx(transaction):
+    if transaction == "INVALIDTRANSACTION":
+        return make_response(jsonify({'message': 'This transaction is invalid',
+                                      'error': 'invalid'}), 422)
     try:
         the_transaction = cryptocurrency.getrawtransaction(transaction, 1)
     except JSONRPCException:
