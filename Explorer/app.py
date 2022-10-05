@@ -302,6 +302,7 @@ def address(the_address):
                                        total_balance=address_summary.balance,
                                        total_received=address_summary.received,
                                        total_sent=address_summary.sent,
+                                       total_pages=total_pages,
                                        which_currency=coin_uniques["shortened"]), 200
             else:
                 if the_page == 1:
