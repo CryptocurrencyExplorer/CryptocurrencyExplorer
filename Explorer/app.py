@@ -580,7 +580,10 @@ def api__received_by_address(the_address):
 @application.get("/api/richlist/")
 def api__rich_list():
     the_top = db.session.query(AddressSummary).order_by(desc('balance')).limit(500)
-    return make_response(jsonify({'message': [{'address': x.address, 'balance': x.balance} for x in the_top],
+    the_rich_list = {}
+    for the_index, the_address in enumerate(the_top):
+        the_rich_list[the_index] = {"address": the_address.address, "balance": the_address.balance}
+    return make_response(jsonify({'message': the_rich_list,
                                   'error': 'ok'}), 200)
 
 
@@ -594,7 +597,7 @@ def api__sent_by_address(the_address):
         return make_response(jsonify({'message': 'This address is invalid',
                                       'error': '404'}), 404)
     else:
-        address_sent = address_lookup.received
+        address_sent = address_lookup.sent
         return make_response(jsonify({'message': address_sent,
                                       'error': 'ok'}), 200)
 
