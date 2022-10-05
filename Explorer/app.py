@@ -529,7 +529,8 @@ def api__connections():
         return make_response(jsonify({'message': 'There was a JSON error. Try again later',
                                       'error': 'invalid'}), 422)
     else:
-        return make_response(jsonify(total_connections), 200)
+        return make_response(jsonify({'message': total_connections,
+                                      'error': 'ok'}), 200)
 
 
 @application.get("/api/lastdifficulty/")
