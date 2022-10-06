@@ -29,7 +29,10 @@ from models import db, Blocks, CoinbaseTXIn, TXs, TXIn, TxOut, Addresses, Addres
 class DecimalEncoder(JSONEncoder):
     def default(self, obj):
         if isinstance(obj, Decimal):
-            return str(obj)
+            if obj == 0:
+                return '0.00000000'
+            else:
+                return str(obj)
         return JSONEncoder.default(self, obj)
 
 
