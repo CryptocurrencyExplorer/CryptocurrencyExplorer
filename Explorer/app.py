@@ -122,11 +122,6 @@ def sqlalchemy_error(error):
     db.session.rollback()
 
 
-@application.before_request
-def set_session_permanent():
-    session.permanent = True
-
-
 @application.errorhandler(CSRFError)
 def handle_csrf_error(e):
     return render_template('404.html', error=e.description), 400
