@@ -59,7 +59,7 @@ def create_app(the_csrf):
         prep_application.logger.error("coin_name in config.py is not a supported coin.")
         sys.exit()
     prep_application.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
-    prep_application.config['MAX_CONTENT_LENGTH'] = 256
+    prep_application.config['MAX_CONTENT_LENGTH'] = 1024
     # 30 days
     prep_application.config['PERMANENT_SESSION_LIFETIME'] = 2592000
     prep_application.config['PROGRAM_NAME'] = program_name
