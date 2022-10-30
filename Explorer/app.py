@@ -1,4 +1,4 @@
-# apt install postgresql postgresql-client
+# apt install postgresql postgresql-client redis redis-server
 # ----------------------------------------------
 # Use Python 3.3+ because of `decimal` issues:
 # https://docs.sqlalchemy.org/en/14/core/type_basics.html#sqlalchemy.types.Numeric
@@ -30,10 +30,7 @@ from models import db, Blocks, CoinbaseTXIn, TXs, TXIn, TxOut, Addresses, Addres
 class DecimalEncoder(JSONEncoder):
     def default(self, obj):
         if isinstance(obj, Decimal):
-            if obj == 0:
-                return '0.00000000'
-            else:
-                return str(obj)
+            return f"{obj:0.8f}"
         return JSONEncoder.default(self, obj)
 
 
@@ -83,8 +80,8 @@ def create_app(the_csrf):
     prep_application.jinja_env.enable_async = True
     prep_application.wsgi_app = ProxyFix(prep_application.wsgi_app, x_proto=1, x_host=1)
     the_cache = Cache(config={'CACHE_TYPE': 'RedisCache',
-                              'CACHE_DEFAULT_TIMEOUT': 1800,
-                              'CACHE_KEY_PREFIX': 'cce'})
+                              'CACHE_KEY_PREFIX': 'cce',
+                              'CACHE_REDIS_URL': 'redis://localhost:6379/0'})
     the_cache.init_app(prep_application)
     db.init_app(prep_application)
     the_csrf.init_app(prep_application)
@@ -157,7 +154,6 @@ def uri_too_large():
 
 
 @application.route('/robots.txt')
-@cache.cached()
 def robots():
     return send_from_directory(application.static_folder, 'robots.txt')
 
@@ -171,7 +167,6 @@ class SearchForm(FlaskForm):
 
 @application.get("/")
 @application.post("/")
-@cache.cached(timeout=30)
 def index():
     form = SearchForm(request.form)
     count = request.args.get('count', default=50, type=int)
@@ -279,7 +274,6 @@ def redirect_to_address():
 
 
 @application.get("/address/<the_address>")
-@cache.cached(timeout=300)
 def address(the_address):
     # No reason to waste an SQL lookup if we're being redirected from /address/ ^
     if the_address == 'INVALIDADDRESS':
@@ -333,7 +327,6 @@ def redirect_to_block():
 
 
 @application.get("/block/<block_hash_or_height>")
-@cache.cached()
 def block(block_hash_or_height):
     try:
         the_block_height = int(block_hash_or_height)
@@ -397,7 +390,6 @@ def redirect_to_tx():
 
 
 @application.get("/tx/<transaction>")
-@cache.cached(timeout=300)
 def tx(transaction):
     check_transaction = db.session.query(TXs).filter_by(txid=transaction.lower()).first()
     if check_transaction is not None:
@@ -424,13 +416,11 @@ def tx(transaction):
 
 
 @application.get("/api/")
-@cache.cached(timeout=300)
 def api_index():
     return render_template('api_index.html'), 200
 
 
 @application.get("/api/addressbalance/")
-@cache.cached(timeout=300)
 def redirect_to_api__address_balance():
     if coin_uniques['burn_address'] is not None:
         return redirect(url_for('api__address_balance', the_address=coin_uniques['burn_address']))
@@ -439,19 +429,16 @@ def redirect_to_api__address_balance():
 
 
 @application.get("/api/confirmations")
-@cache.cached(timeout=120)
 def redirect_to_api__confirmations():
     return redirect(url_for('api__confirmations', userinput_block_height="0"))
 
 
 @application.get("/api/rawtx/")
-@cache.cached(timeout=300)
 def redirect_to_api__rawtx():
     return redirect(url_for('api__rawtx', transaction="INVALIDTRANSACTION"))
 
 
 @application.get("/api/receivedbyaddress/")
-@cache.cached(timeout=300)
 def redirect_to_api__received_by_address():
     if coin_uniques['burn_address'] is not None:
         return redirect(url_for('api__received_by_address', the_address=coin_uniques['burn_address']))
@@ -460,7 +447,6 @@ def redirect_to_api__received_by_address():
 
 
 @application.get("/api/sentbyaddress/")
-@cache.cached(timeout=300)
 def redirect_to_api__sent_by_address():
     if coin_uniques['burn_address'] is not None:
         return redirect(url_for('api__sent_by_address', the_address=coin_uniques['burn_address']))
@@ -469,7 +455,6 @@ def redirect_to_api__sent_by_address():
 
 
 @application.get("/api/validateaddress/")
-@cache.cached(timeout=3600)
 def redirect_to_api__validate_address():
     if coin_uniques['burn_address'] is not None:
         return redirect(url_for('api__validate_address', the_address=coin_uniques['burn_address']))
@@ -478,7 +463,6 @@ def redirect_to_api__validate_address():
 
 
 @application.get("/api/addressbalance/<the_address>")
-@cache.cached(timeout=300)
 def api__address_balance(the_address):
     if the_address == "INVALID_ADDRESS":
         return make_response(jsonify({'message': 'Hi there, did you mean to put in an address?',
@@ -494,7 +478,6 @@ def api__address_balance(the_address):
 
 
 @application.get("/api/blockcount")
-@cache.cached(timeout=120)
 def api__block_count():
     most_recent_height = db.session.query(Blocks).order_by(desc('height')).first().height
     return make_response(jsonify({'message': most_recent_height,
@@ -502,7 +485,6 @@ def api__block_count():
 
 
 @application.get("/api/confirmations/<userinput_block_height>")
-@cache.cached(timeout=120)
 def api__confirmations(userinput_block_height):
     try:
         userinput_block_height = int(userinput_block_height)
@@ -536,7 +518,6 @@ def api__confirmations(userinput_block_height):
 
 
 @application.get("/api/connections")
-@cache.cached(timeout=300)
 def api__connections():
     try:
         total_connections = cryptocurrency.getconnectioncount()
@@ -549,7 +530,6 @@ def api__connections():
 
 
 @application.get("/api/lastdifficulty")
-@cache.cached(timeout=300)
 def api__last_difficulty():
     latest_difficulty = float(db.session.query(Blocks).order_by(desc('height')).first().difficulty)
     return make_response(jsonify({'message': latest_difficulty,
@@ -557,7 +537,6 @@ def api__last_difficulty():
 
 
 @application.get("/api/mempool")
-@cache.cached(timeout=300)
 def api__mempool():
     try:
         the_mempool = cryptocurrency.getrawmempool(True)
@@ -569,7 +548,6 @@ def api__mempool():
 
 
 @application.get("/api/rawtx/<transaction>")
-@cache.cached(timeout=300)
 def api__rawtx(transaction):
     if transaction == "INVALIDTRANSACTION":
         return make_response(jsonify({'message': 'This transaction is invalid',
@@ -584,7 +562,6 @@ def api__rawtx(transaction):
 
 
 @application.get("/api/receivedbyaddress/<the_address>")
-@cache.cached(timeout=300)
 def api__received_by_address(the_address):
     if the_address == "INVALID_ADDRESS":
         return make_response(jsonify({'message': 'Hi there, did you mean to put in an address?',
@@ -600,7 +577,6 @@ def api__received_by_address(the_address):
 
 
 @application.get("/api/richlist")
-@cache.cached(timeout=3600)
 def api__rich_list():
     the_top = db.session.query(AddressSummary).order_by(desc('balance')).limit(500)
     the_rich_list = {}
@@ -611,7 +587,6 @@ def api__rich_list():
 
 
 @application.get("/api/sentbyaddress/<the_address>")
-@cache.cached(timeout=300)
 def api__sent_by_address(the_address):
     if the_address == "INVALID_ADDRESS":
         return make_response(jsonify({'message': 'Hi there, did you mean to put in an address?',
@@ -627,21 +602,18 @@ def api__sent_by_address(the_address):
 
 
 @application.get("/api/totalcoins")
-@cache.cached(timeout=300)
 def api__total_coins():
     return make_response(jsonify({'message': float(cryptocurrency.gettxoutsetinfo()['total_amount']),
                                   'error': 'ok'}), 200)
 
 
 @application.get("/api/totaltransactions")
-@cache.cached(timeout=300)
 def api__total_transactions():
     return make_response(jsonify({'message': cryptocurrency.gettxoutsetinfo()['transactions'],
                                   'error': 'ok'}), 200)
 
 
 @application.get("/api/validateaddress/<the_address>")
-@cache.cached(timeout=300)
 def api__validate_address(the_address):
     if the_address == "INVALID_ADDRESS":
         return make_response(jsonify({'message': 'Hi there, did you mean to put in an address?',
