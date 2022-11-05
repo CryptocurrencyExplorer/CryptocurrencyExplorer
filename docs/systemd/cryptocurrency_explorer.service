@@ -6,7 +6,7 @@ After=network.target
 User=change_this
 Group=change_this
 WorkingDirectory=/home/change_this/CryptocurrencyExplorer/Explorer/
-ExecStart=/home/change_this/venv/bin/gunicorn app:application
+ExecStart=/home/change_this/venv/bin/gunicorn -k gevent app:application
 Restart=on-failure
 
 [Install]
