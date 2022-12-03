@@ -28,6 +28,15 @@ Setup
 Please read [SETUP.md](SETUP.md)
 
 
+Development
+==========
+
+CryptocurrencyExplorer is designed and developed in part by [Golden Sword LLC](https://goldenswordllc.com). If you have any automation, web security, or custom business needs, give them a call!
+
+Other development has been provided by `dermoth`, as well as `V3ntus`. A proper changelog hasn't yet been made, but will be when the project reaches a 1.0 release.
+
+
+
 Sponsors
 ==========
 
