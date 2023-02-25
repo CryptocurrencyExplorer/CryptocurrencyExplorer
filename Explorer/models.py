@@ -128,7 +128,8 @@ class TXs(db.Model):
                      index=True)
     block_height = db.Column(db.Integer,
                              unique=False,
-                             nullable=False)
+                             nullable=False,
+                             index=True)
     size = db.Column(db.Numeric,
                      unique=False,
                      nullable=False)

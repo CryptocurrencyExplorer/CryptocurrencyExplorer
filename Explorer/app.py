@@ -222,9 +222,9 @@ def index():
                                                            genesis_time=genesis_timestamp), 200
                                 else:
                                     return render_template('search_results.html',
+                                                           searched_addresses=address_like,
                                                            searched_blocks=block_like,
-                                                           searched_txs=tx_like,
-                                                           searched_addresses=address_like)
+                                                           searched_txs=tx_like)
                             else:
                                 return redirect(url_for('tx', transaction=form.search.data))
                 else:
@@ -365,7 +365,7 @@ def block(block_hash_or_height):
                 next_block_hash = None
 
             transactions = db.session.query(TXs).filter_by(block_height=the_block_height).all()
-            txin = db.session.query(TXIn).filter_by(block_height=the_block_height)
+            txin = db.session.query(TXIn).filter_by(block_height=the_block_height).all()
             txout = db.session.query(TxOut).filter_by(block_height=the_block_height).all()
 
             return render_template('block.html',
@@ -440,7 +440,7 @@ def redirect_to_api__address_balance():
         return redirect(url_for('api__address_balance', the_address='INVALIDADDRESS'))
 
 
-@application.get("/api/confirmations")
+@application.get("/api/confirmations/")
 def redirect_to_api__confirmations():
     return redirect(url_for('api__confirmations', userinput_block_height="0"))
 
@@ -474,7 +474,7 @@ def redirect_to_api__validate_address():
         return redirect(url_for('api__validate_address', the_address='INVALIDADDRESS'))
 
 
-@application.get("/api/addressbalance/<the_address>")
+@application.get("/api/addressbalance/<the_address>/")
 def api__address_balance(the_address):
     if the_address == "INVALID_ADDRESS":
         return make_response(jsonify({'message': 'Hi there, did you mean to put in an address?',
@@ -489,14 +489,14 @@ def api__address_balance(the_address):
                                       'error': 'ok'}), 200)
 
 
-@application.get("/api/blockcount")
+@application.get("/api/blockcount/")
 def api__block_count():
     most_recent_height = db.session.query(Blocks).order_by(desc('height')).first().height
     return make_response(jsonify({'message': most_recent_height,
                                   'error': 'ok'}), 200)
 
 
-@application.get("/api/confirmations/<userinput_block_height>")
+@application.get("/api/confirmations/<userinput_block_height>/")
 def api__confirmations(userinput_block_height):
     try:
         userinput_block_height = int(userinput_block_height)
@@ -529,7 +529,7 @@ def api__confirmations(userinput_block_height):
                                           'error': 'invalid'}), 422)
 
 
-@application.get("/api/connections")
+@application.get("/api/connections/")
 def api__connections():
     try:
         total_connections = cryptocurrency.getconnectioncount()
@@ -541,14 +541,14 @@ def api__connections():
                                       'error': 'ok'}), 200)
 
 
-@application.get("/api/lastdifficulty")
+@application.get("/api/lastdifficulty/")
 def api__last_difficulty():
     latest_difficulty = float(db.session.query(Blocks).order_by(desc('height')).first().difficulty)
     return make_response(jsonify({'message': latest_difficulty,
                                   'error': 'ok'}), 200)
 
 
-@application.get("/api/mempool")
+@application.get("/api/mempool/")
 def api__mempool():
     try:
         the_mempool = cryptocurrency.getrawmempool(True)
@@ -559,7 +559,7 @@ def api__mempool():
         return make_response(jsonify(the_mempool), 200)
 
 
-@application.get("/api/rawtx/<transaction>")
+@application.get("/api/rawtx/<transaction>/")
 def api__rawtx(transaction):
     if transaction == "INVALIDTRANSACTION":
         return make_response(jsonify({'message': 'This transaction is invalid',
@@ -573,7 +573,7 @@ def api__rawtx(transaction):
         return make_response(jsonify(the_transaction), 200)
 
 
-@application.get("/api/receivedbyaddress/<the_address>")
+@application.get("/api/receivedbyaddress/<the_address>/")
 def api__received_by_address(the_address):
     if the_address == "INVALID_ADDRESS":
         return make_response(jsonify({'message': 'Hi there, did you mean to put in an address?',
@@ -588,7 +588,7 @@ def api__received_by_address(the_address):
                                       'error': 'ok'}), 200)
 
 
-@application.get("/api/richlist")
+@application.get("/api/richlist/")
 def api__rich_list():
     the_top = db.session.query(AddressSummary).order_by(desc('balance')).limit(500)
     the_rich_list = {}
@@ -598,7 +598,7 @@ def api__rich_list():
                                   'error': 'ok'}), 200)
 
 
-@application.get("/api/sentbyaddress/<the_address>")
+@application.get("/api/sentbyaddress/<the_address>/")
 def api__sent_by_address(the_address):
     if the_address == "INVALID_ADDRESS":
         return make_response(jsonify({'message': 'Hi there, did you mean to put in an address?',
@@ -613,19 +613,19 @@ def api__sent_by_address(the_address):
                                       'error': 'ok'}), 200)
 
 
-@application.get("/api/totalcoins")
+@application.get("/api/totalcoins/")
 def api__total_coins():
     return make_response(jsonify({'message': float(cryptocurrency.gettxoutsetinfo()['total_amount']),
                                   'error': 'ok'}), 200)
 
 
-@application.get("/api/totaltransactions")
+@application.get("/api/totaltransactions/")
 def api__total_transactions():
     return make_response(jsonify({'message': cryptocurrency.gettxoutsetinfo()['transactions'],
                                   'error': 'ok'}), 200)
 
 
-@application.get("/api/validateaddress/<the_address>")
+@application.get("/api/validateaddress/<the_address>/")
 def api__validate_address(the_address):
     if the_address == "INVALID_ADDRESS":
         return make_response(jsonify({'message': 'Hi there, did you mean to put in an address?',

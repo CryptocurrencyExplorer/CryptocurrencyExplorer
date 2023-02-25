@@ -70,60 +70,74 @@ def bulk_of_first_run_or_cron(name_of_flask_app, db, uniques, cryptocurrency, bl
                     else:
                         # all coinbase are added to outstanding
                         outstanding_coins += vout['value']
-                    the_address = vout['scriptPubKey']['addresses'][0]
-
-                    address_summary_lookup = db.session.query(AddressSummary).filter_by(
-                        address=the_address).one_or_none()
-                    if address_summary_lookup is None:
-                        commit_address_transaction_output = Addresses(address=the_address,
-                                                                      amount=vout['value'],
-                                                                      n=vout['n'],
-                                                                      block_height=block_height,
-                                                                      balance=vout['value'],
-                                                                      block_hash=the_block['hash'],
-                                                                      the_time=the_block['time'],
-                                                                      transaction=this_transaction,
-                                                                      input=False,
-                                                                      output=True)
-                        db.session.add(commit_address_transaction_output)
-                        address_summary = AddressSummary(address=the_address,
-                                                         balance=vout['value'],
-                                                         transactions_in=1,
-                                                         received=vout['value'],
-                                                         transactions_out=0,
-                                                         sent=decimal.Decimal(0.00000000))
-                        db.session.add(address_summary)
+                    # if type is "nulldata", this address won't exist.
+                    try:
+                        the_address = vout['scriptPubKey']['addresses'][0]
+                    except KeyError:
+                        # TODO - Setting address to 'nulldata' here is wrong
+                        commit_transaction_out = TxOut(block_height=block_height,
+                                                       txid=this_transaction,
+                                                       n=vout['n'],
+                                                       value=vout['value'],
+                                                       scriptpubkey=vout['scriptPubKey']['asm'],
+                                                       address='nulldata',
+                                                       linked_txid=None,
+                                                       linked_txid_n=None,
+                                                       spent=False)
+                        db.session.add(commit_transaction_out)
                     else:
-                        the_balance = address_summary_lookup.balance
-                        commit_address_transaction_output = Addresses(address=the_address,
-                                                                      amount=vout['value'],
-                                                                      n=vout['n'],
-                                                                      block_height=block_height,
-                                                                      balance=the_balance + vout['value'],
-                                                                      block_hash=the_block['hash'],
-                                                                      the_time=the_block['time'],
-                                                                      transaction=this_transaction,
-                                                                      input=False,
-                                                                      output=True)
-                        db.session.add(commit_address_transaction_output)
-                        address_summary_lookup.balance += vout['value']
-                        address_summary_lookup.transactions_in += 1
-                        address_summary_lookup.received += vout['value']
-                        db.session.add(address_summary_lookup)
-                    ###
-                    tx_value_out += vout['value']
-                    commit_transaction_out = TxOut(block_height=block_height,
-                                                   txid=this_transaction,
-                                                   n=vout['n'],
-                                                   value=vout['value'],
-                                                   scriptpubkey=vout['scriptPubKey']['asm'],
-                                                   address=the_address,
-                                                   linked_txid=None,
-                                                   linked_txid_n=None,
-                                                   spent=False)
-                    db.session.add(commit_transaction_out)
+                        address_summary_lookup = db.session.query(AddressSummary).filter_by(
+                            address=the_address).one_or_none()
+                        if address_summary_lookup is None:
+                            commit_address_transaction_output = Addresses(address=the_address,
+                                                                          amount=vout['value'],
+                                                                          n=vout['n'],
+                                                                          block_height=block_height,
+                                                                          balance=vout['value'],
+                                                                          block_hash=the_block['hash'],
+                                                                          the_time=the_block['time'],
+                                                                          transaction=this_transaction,
+                                                                          input=False,
+                                                                          output=True)
+                            db.session.add(commit_address_transaction_output)
+                            address_summary = AddressSummary(address=the_address,
+                                                             balance=vout['value'],
+                                                             transactions_in=1,
+                                                             received=vout['value'],
+                                                             transactions_out=0,
+                                                             sent=decimal.Decimal(0.00000000))
+                            db.session.add(address_summary)
+                        else:
+                            the_balance = address_summary_lookup.balance
+                            commit_address_transaction_output = Addresses(address=the_address,
+                                                                          amount=vout['value'],
+                                                                          n=vout['n'],
+                                                                          block_height=block_height,
+                                                                          balance=the_balance + vout['value'],
+                                                                          block_hash=the_block['hash'],
+                                                                          the_time=the_block['time'],
+                                                                          transaction=this_transaction,
+                                                                          input=False,
+                                                                          output=True)
+                            db.session.add(commit_address_transaction_output)
+                            address_summary_lookup.balance += vout['value']
+                            address_summary_lookup.transactions_in += 1
+                            address_summary_lookup.received += vout['value']
+                            db.session.add(address_summary_lookup)
+                        ###
+                        tx_value_out += vout['value']
+                        commit_transaction_out = TxOut(block_height=block_height,
+                                                       txid=this_transaction,
+                                                       n=vout['n'],
+                                                       value=vout['value'],
+                                                       scriptpubkey=vout['scriptPubKey']['asm'],
+                                                       address=the_address,
+                                                       linked_txid=None,
+                                                       linked_txid_n=None,
+                                                       spent=False)
+                        db.session.add(commit_transaction_out)
+                    # 'nulldata' still has a value, even if it's 0, so this doesn't go in the try/except/else
                     total_value_out += vout['value']
-
                 for vin_num, vin in enumerate(raw_block_tx['vin']):
                     if number == 0 and vin_num == 0:
                         commit_coinbase = CoinbaseTXIn(block_height=block_height,
