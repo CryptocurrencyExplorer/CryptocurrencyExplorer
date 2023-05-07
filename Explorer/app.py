@@ -196,7 +196,7 @@ def index():
             try:
                 input_data = int(form.search.data)
             except ValueError:
-                if len(form.search.data) >= 6:
+                if 64 >= len(form.search.data) >= 6:
                     block_hash_lookup = db.session.query(Blocks).filter_by(hash=form.search.data).one_or_none()
                     if block_hash_lookup is not None:
                         return redirect(url_for('block', block_hash_or_height=form.search.data))
@@ -262,7 +262,7 @@ def index():
                                    latest_block=latest_block_height,
                                    chain_age=chain_age,
                                    genesis_time=genesis_timestamp), 200
-    elif request.method == 'GET':
+    elif request.method in ['GET', 'HEAD', 'OPTIONS']:
         return render_template('index.html',
                                form=form,
                                front_page_blocks=front_page_items,
