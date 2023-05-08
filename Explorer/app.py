@@ -197,19 +197,17 @@ def index():
                 input_data = int(form.search.data)
             except ValueError:
                 if 64 >= len(form.search.data) >= 6:
-                    block_hash_lookup = db.session.query(Blocks).filter_by(hash=form.search.data).one_or_none()
-                    if block_hash_lookup is not None:
-                        return redirect(url_for('block', block_hash_or_height=form.search.data))
-                    else:
-                        if cryptocurrency.validateaddress(form.search.data)['isvalid']:
-                            return redirect(url_for('address', the_address=form.search.data))
+                    address_like = db.session.query(AddressSummary).filter(AddressSummary.address.ilike(f"%{form.search.data}%")).all()
+                    if not address_like:
+                        input_data = form.search.data.lower()
+                        block_hash_lookup = db.session.query(Blocks).filter_by(hash=input_data).one_or_none()
+                        if block_hash_lookup is not None:
+                            return redirect(url_for('block', block_hash_or_height=input_data))
                         else:
-                            tx_lookup = db.session.query(TXs).filter_by(txid=form.search.data.lower()).one_or_none()
-                            if tx_lookup is None:
-                                address_like = db.session.query(AddressSummary).filter(AddressSummary.address.ilike(f"%{form.search.data}%")).all()
-                                block_like = db.session.query(Blocks).filter(Blocks.hash.ilike(f"%{form.search.data}%")).all()
-                                tx_like = db.session.query(TXs).filter(TXs.txid.ilike(f"%{form.search.data}%")).all()
-                                if block_like is None and tx_like is None and address_like is None:
+                            tx_like = db.session.query(TXs).filter(TXs.txid.like(f"%{input_data}%")).all()
+                            if not tx_like:
+                                block_like = db.session.query(Blocks).filter(Blocks.hash.like(f"%{input_data}%")).all()
+                                if not block_like:
                                     return render_template('index.html',
                                                            search_validated=False,
                                                            form=form,
@@ -221,12 +219,23 @@ def index():
                                                            chain_age=chain_age,
                                                            genesis_time=genesis_timestamp), 200
                                 else:
-                                    return render_template('search_results.html',
-                                                           searched_addresses=address_like,
-                                                           searched_blocks=block_like,
-                                                           searched_txs=tx_like)
+                                    if len(block_like) == 1:
+                                        return redirect(url_for('block', block_hash_or_height=block_like[0].hash))
+                                    else:
+                                        return render_template('search_results.html',
+                                                               searched_addresses=address_like,
+                                                               searched_blocks=block_like,
+                                                               searched_txs=tx_like)
                             else:
-                                return redirect(url_for('tx', transaction=form.search.data))
+                                return redirect(url_for('tx', transaction=input_data))
+                    else:
+                        if len(address_like) == 1:
+                            return redirect(url_for('address', the_address=address_like[0].address))
+                        else:
+                            return render_template('search_results.html',
+                                                    searched_addresses=address_like,
+                                                    searched_blocks=[],
+                                                    searched_txs=[])
                 else:
                     return render_template('index.html',
                                            input_too_short=True,
