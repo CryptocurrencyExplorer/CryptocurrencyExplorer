@@ -7,10 +7,10 @@ import logging
 import math
 import sys
 from decimal import Decimal
+from json import JSONEncoder
 from logging.handlers import RotatingFileHandler
 from flask import Flask, jsonify, make_response, send_from_directory
 from flask import redirect, request, url_for, render_template
-from flask.json import JSONEncoder
 from flask_caching import Cache
 from flask_wtf import FlaskForm
 from flask_wtf.csrf import CSRFError, CSRFProtect
@@ -250,7 +250,6 @@ def index():
                 elif form.search.data.startswith(tx_prefixes):
                     if 76 >= len(form.search.data) >= 6:
                         tx_lookup = db.session.query(TXs).filter(TXs.txid.like(f"%{form.search.data.lower()}%")).all()
-
                 else:
                     try:
                         input_data = int(form.search.data)
@@ -322,7 +321,17 @@ def index():
                                                    latest_block=latest_block_height,
                                                    chain_age=chain_age,
                                                    genesis_time=genesis_timestamp), 200
-
+            else:
+                return render_template('index.html',
+                                       input_too_short=True,
+                                       form=form,
+                                       front_page_blocks=front_page_items,
+                                       format_time=format_time,
+                                       count=count,
+                                       hi=hi,
+                                       latest_block=latest_block_height,
+                                       chain_age=chain_age,
+                                       genesis_time=genesis_timestamp), 200
         else:
             return render_template('index.html',
                                    form=form,
