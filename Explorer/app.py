@@ -194,7 +194,7 @@ def index():
     if request.method == 'POST':
         address_prefixes = ('address:', 'a:', 'add:')
         block_prefixes = ('block:', 'b:', 'bhash:')
-        tx_prefixes = ('transaction:', 'tx:', 'thash:')
+        tx_prefixes = ('transaction:', 't:', 'tx:', 'thash:')
         if form.validate_on_submit():
             if 76 >= len(form.search.data) >= 1:
                 if form.search.data.startswith(address_prefixes):
@@ -210,6 +210,7 @@ def index():
                                                        searched_blocks=[],
                                                        searched_txs=[])
                         else:
+                            # TODO - set a variable for being unable to find specifically addresses
                             return render_template('index.html',
                                                    search_validated=False,
                                                    form=form,
@@ -237,6 +238,18 @@ def index():
                         try:
                             if int(the_block) in range(0, latest_block_height + 1):
                                 return redirect(url_for('block', block_hash_or_height=the_block))
+                            else:
+                                # TODO - set a variable for being unable to find specifically blocks
+                                return render_template('index.html',
+                                                       search_validated=False,
+                                                       form=form,
+                                                       front_page_blocks=front_page_items,
+                                                       format_time=format_time,
+                                                       count=count,
+                                                       hi=hi,
+                                                       latest_block=latest_block_height,
+                                                       chain_age=chain_age,
+                                                       genesis_time=genesis_timestamp), 200
                         except ValueError:
                             if 70 >= len(form.search.data) >= 6:
                                 block_lookup = db.session.query(Blocks).filter(Blocks.hash.like(f"%{the_block}%")).all()
@@ -249,7 +262,39 @@ def index():
                                                            searched_txs=[])
                 elif form.search.data.startswith(tx_prefixes):
                     if 76 >= len(form.search.data) >= 6:
-                        tx_lookup = db.session.query(TXs).filter(TXs.txid.like(f"%{form.search.data.lower()}%")).all()
+                        the_tx = ''.join(form.search.data.split(':')[1:])
+                        tx_lookup = db.session.query(TXs).filter(TXs.txid.like(f"%{the_tx}%")).all()
+                        if tx_lookup:
+                            if len(tx_lookup) == 1:
+                                return redirect(url_for('tx', transaction=tx_lookup[0].txid))
+                            else:
+                                return render_template('search_results.html',
+                                                       searched_addresses=[],
+                                                       searched_blocks=[],
+                                                       searched_txs=tx_lookup)
+                        else:
+                            # TODO - set a variable for being unable to find specifically transactions
+                            return render_template('index.html',
+                                                   search_validated=False,
+                                                   form=form,
+                                                   front_page_blocks=front_page_items,
+                                                   format_time=format_time,
+                                                   count=count,
+                                                   hi=hi,
+                                                   latest_block=latest_block_height,
+                                                   chain_age=chain_age,
+                                                   genesis_time=genesis_timestamp), 200
+                    else:
+                        return render_template('index.html',
+                                               input_too_short=True,
+                                               form=form,
+                                               front_page_blocks=front_page_items,
+                                               format_time=format_time,
+                                               count=count,
+                                               hi=hi,
+                                               latest_block=latest_block_height,
+                                               chain_age=chain_age,
+                                               genesis_time=genesis_timestamp), 200
                 else:
                     try:
                         input_data = int(form.search.data)
