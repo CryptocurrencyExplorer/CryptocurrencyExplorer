@@ -55,7 +55,7 @@
                     <td>
                     {% for txout in the_txout %}
                     {% if each.txid == txout.txid %}
-                    <a href="/address/{{ txout.address }}">{{ txout.address }}</a>: {{ txout.value }}<br />
+                    {% if txout.address == 'nulldata' %}<a href="https://learnmeabitcoin.com/technical/nulldata">NULL DATA scripts</a> are not currently supported{% else %}<a href="/address/{{ txout.address }}">{{ txout.address }}</a>: {{ format_eight_zeroes(txout.value) }}{% endif %}<br />
                     {% endif %}
                     {% endfor %}
                     </td>

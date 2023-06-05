@@ -28,7 +28,7 @@
                 <tr>
                     <td><a id="i0">0</a></td>
                     <td>Generation</td>
-                    <td>{{ outputs.0.value }}</td>
+                    <td>{{ format_eight_zeroes(outputs.0.value) }}</td>
                     <td>Generation</td>
                     <td>{{ coinbase.scriptsig }}</td>
                 </tr>
@@ -51,8 +51,8 @@
                 <tr>
                     <td><a id="o{{ loop.index0 }}">{{ loop.index0 }}</a></td>
                     <td>{% if vout.spent %}<a href="/tx/{{ vout.linked_txid }}#i{{ vout.linked_txid_n }}">{{ vout.linked_txid[0:10] }}...:{{ vout.linked_txid_n }}</a>{% else %}Not yet redeemed{% endif %}</td>
-                    <td>{{ vout.value }}</td>
-                    <td><a href="/address/{{ vout.address }}">{{ vout.address }}</a></td>
+                    <td>{{ format_eight_zeroes(vout.value) }}</td>
+                    <td>{% if vout.address == 'nulldata' %}<a href="https://learnmeabitcoin.com/technical/nulldata">NULL DATA scripts</a> are not currently supported{% else %}<a href="/address/{{ vout.address }}">{{ vout.address }}</a>{% endif %}</td>
                     <td>{{ vout.scriptpubkey }}</td>
                 </tr>
                 {% endfor %}
