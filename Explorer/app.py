@@ -301,57 +301,35 @@ def index():
                     except ValueError:
                         if 64 >= len(form.search.data) >= 6:
                             address_like = db.session.query(AddressSummary).filter(AddressSummary.address.ilike(f"%{form.search.data}%")).all()
-                            if not address_like:
-                                input_data = form.search.data.lower()
-                                tx_like = db.session.query(TXs).filter(TXs.txid.like(f"%{input_data}%")).all()
-                                if not tx_like:
-                                    block_like = db.session.query(Blocks).filter(Blocks.hash.like(f"%{input_data}%")).all()
-                                    if not block_like:
-                                        return render_template('index.html',
-                                                               search_validated=False,
-                                                               form=form,
-                                                               front_page_blocks=front_page_items,
-                                                               format_time=format_time,
-                                                               count=count,
-                                                               hi=hi,
-                                                               latest_block=latest_block_height,
-                                                               chain_age=chain_age,
-                                                               genesis_time=genesis_timestamp), 200
-                                    else:
-                                        if len(block_like) == 1:
-                                            return redirect(url_for('block', block_hash_or_height=block_like[0].hash))
-                                        else:
-                                            return render_template('search_results.html',
-                                                                   searched_addresses=address_like,
-                                                                   searched_blocks=block_like,
-                                                                   searched_txs=tx_like)
-                                else:
-                                    if len(tx_like) == 1:
-                                        return redirect(url_for('tx', transaction=tx_like[0].txid))
-                                    else:
-                                        return render_template('search_results.html',
-                                                               searched_addresses=address_like,
-                                                               searched_blocks=[],
-                                                               searched_txs=tx_like)
-                            else:
-                                if len(address_like) == 1:
-                                    return redirect(url_for('address', the_address=address_like[0].address))
-                                else:
+                            address_len = len(address_like)
+                            input_data = form.search.data.lower()
+                            tx_like = db.session.query(TXs).filter(TXs.txid.like(f"%{input_data}%")).all()
+                            tx_len = len(tx_like)
+                            block_like = db.session.query(Blocks).filter(Blocks.hash.like(f"%{input_data}%")).all()
+                            block_len = len(block_like)
+                            if address_len + tx_len + block_len >= 2:
                                     return render_template('search_results.html',
                                                            searched_addresses=address_like,
-                                                           searched_blocks=[],
-                                                           searched_txs=[])
-                        else:
-                            return render_template('index.html',
-                                                   input_too_short=True,
-                                                   form=form,
-                                                   front_page_blocks=front_page_items,
-                                                   format_time=format_time,
-                                                   count=count,
-                                                   hi=hi,
-                                                   latest_block=latest_block_height,
-                                                   chain_age=chain_age,
-                                                   genesis_time=genesis_timestamp), 200
+                                                           searched_blocks=block_like,
+                                                           searched_txs=tx_like)
+                            elif address_len + tx_len + block_len == 1:
+                                if address_len:
+                                    return redirect(url_for('address', the_address=address_like[0].address))
+                                elif tx_len:
+                                    return redirect(url_for('tx', transaction=tx_like[0].txid))
+                                elif block_len:
+                                    return redirect(url_for('block', block_hash_or_height=block_like[0].hash))
+                            else:
+                                return render_template('index.html',
+                                                       search_validated=False,
+                                                       form=form,
+                                                       front_page_blocks=front_page_items,
+                                                       format_time=format_time,
+                                                       count=count,
+                                                       hi=hi,
+                                                       latest_block=latest_block_height,
+                                                       chain_age=chain_age,
+                                                       genesis_time=genesis_timestamp), 200
                     else:
                         if input_data in range(0, latest_block_height + 1):
                             return redirect(url_for('block', block_hash_or_height=input_data))

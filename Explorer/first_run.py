@@ -119,7 +119,7 @@ def detect_tables():
         detected_tables = set(inspector.get_table_names())
         engine.dispose()
         # TODO - The expected tables will change when segwit is supported.
-        # Though, obviously segwit won't be manipulated/added to if the specific chain doesn't support it.
+        #  Though, obviously segwit won't be manipulated/added to if the specific chain doesn't support it.
         extra_tables_detected = detected_tables.difference(EXPECTED_TABLES)
         valid_tables_missing = EXPECTED_TABLES.difference(detected_tables)
         if len(detected_tables) == 0:
