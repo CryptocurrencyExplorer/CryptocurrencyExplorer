@@ -308,10 +308,10 @@ def index():
                             block_like = db.session.query(Blocks).filter(Blocks.hash.like(f"%{input_data}%")).all()
                             block_len = len(block_like)
                             if address_len + tx_len + block_len >= 2:
-                                    return render_template('search_results.html',
-                                                           searched_addresses=address_like,
-                                                           searched_blocks=block_like,
-                                                           searched_txs=tx_like)
+                                 return render_template('search_results.html',
+                                                        searched_addresses=address_like,
+                                                        searched_blocks=block_like,
+                                                        searched_txs=tx_like)
                             elif address_len + tx_len + block_len == 1:
                                 if address_len:
                                     return redirect(url_for('address', the_address=address_like[0].address))

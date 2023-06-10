@@ -21,14 +21,14 @@
 
                 {% if searched_blocks %}
                 <h3>Blocks</h3>
-                {% for the_block in searched_blocks %}
+                {% for the_block in searched_blocks|sort(attribute='height', reverse=True) %}
                     <li><a href="/block/{{ the_block.hash }}">{{ the_block.height }}</a></li>
                 {% endfor %}
                 {% endif %}
 
                 {% if searched_txs %}
                 <h3>TXs</h3>
-                {% for the_tx in searched_txs %}
+                {% for the_tx in searched_txs|sort(attribute='block_height', reverse=True) %}
                     <li><a href="/tx/{{ the_tx.txid }}">{{ the_tx.txid }}</a></li>
                 {% endfor %}
                 {% endif %}
