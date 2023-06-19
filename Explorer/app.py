@@ -242,27 +242,29 @@ def index():
                             if int(the_block) in range(0, latest_block_height + 1):
                                 return redirect(url_for('block', block_hash_or_height=the_block))
                             else:
-                                # TODO - set a variable for being unable to find specifically blocks
-                                return render_template('index.html',
-                                                       search_validated=False,
-                                                       form=form,
-                                                       front_page_blocks=front_page_items,
-                                                       format_time=format_time,
-                                                       count=count,
-                                                       hi=hi,
-                                                       latest_block=latest_block_height,
-                                                       chain_age=chain_age,
-                                                       genesis_time=genesis_timestamp), 200
+                                raise ValueError
                         except ValueError:
                             if 70 >= len(form.search.data) >= 6:
                                 block_lookup = db.session.query(Blocks).filter(Blocks.hash.like(f"%{the_block}%")).all()
                                 if len(block_lookup) == 1:
                                     return redirect(url_for('block', block_hash_or_height=block_lookup[0].hash))
-                                else:
+                                elif len(block_lookup) >= 2:
                                     return render_template('search_results.html',
                                                            searched_addresses=[],
                                                            searched_blocks=block_lookup,
                                                            searched_txs=[])
+                                else:
+                                    # TODO - set a variable for being unable to find specifically blocks
+                                    return render_template('index.html',
+                                                           search_validated=False,
+                                                           form=form,
+                                                           front_page_blocks=front_page_items,
+                                                           format_time=format_time,
+                                                           count=count,
+                                                           hi=hi,
+                                                           latest_block=latest_block_height,
+                                                           chain_age=chain_age,
+                                                           genesis_time=genesis_timestamp), 200
                 elif form.search.data.startswith(tx_prefixes):
                     if 76 >= len(form.search.data) >= 6:
                         the_tx = ''.join(form.search.data.split(':')[1:])
