@@ -46,7 +46,6 @@ def bulk_of_first_run_or_cron(name_of_flask_app, db, uniques, cryptocurrency, bl
     tx_value_out = decimal.Decimal(0.0)
     tx_value_in = decimal.Decimal(0.0)
     prev_out_total_out = decimal.Decimal(0.0)
-    prev_out_total_out_with_fees = decimal.Decimal(0.0)
     block_total_fees = decimal.Decimal(0.0)
     block_raw_hash = cryptocurrency.getblockhash(block_height)
     the_block = cryptocurrency.getblock(block_raw_hash)
@@ -57,6 +56,7 @@ def bulk_of_first_run_or_cron(name_of_flask_app, db, uniques, cryptocurrency, bl
     # Probably better to just take the latest block's height and minus this block's height to get this
     # block_confirmations = cryptocurrency.getblockcount() + 1 - block_height
     for number, this_transaction in enumerate(raw_block_transactions):
+        coinbase_detected = False
         try:
             raw_block_tx = cryptocurrency.getrawtransaction(this_transaction, 1)
         except JSONRPCException as e:
@@ -70,9 +70,18 @@ def bulk_of_first_run_or_cron(name_of_flask_app, db, uniques, cryptocurrency, bl
             else:
                 for vout_num, vout in enumerate(raw_block_tx['vout']):
                     # first output, first transaction
-                    if vout_num == 0 and number == 0:
-                        # all coinbase are added to outstanding
-                        outstanding_coins += vout['value']
+                    if number == 0:
+                        if vout_num == 0:
+                            # nulldata can be the first output, rather than coinbase
+                            if vout['scriptPubKey']['type'] != 'nulldata':
+                                # all coinbase are added to outstanding
+                                outstanding_coins += vout['value']
+                                coinbase_detected = True
+                        else:
+                            if not coinbase_detected:
+                                if vout['scriptPubKey']['type'] != 'nulldata':
+                                    outstanding_coins += vout['value']
+                                    coinbase_detected = True
                     else:
                         total_value_out_sans_coinbase += vout['value']
                     # if type is "nulldata", this address won't exist.
