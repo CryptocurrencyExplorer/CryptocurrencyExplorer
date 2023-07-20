@@ -28,9 +28,13 @@ def pre_boogie(the_blocks, db, cryptocurrency):
                             desc('outstanding')).first().outstanding
         current_block = db.session.query(Blocks).order_by(desc('height')).first()
         if current_block.nexthash == 'PLACEHOLDER':
-            next_block_hash = cryptocurrency.getblockhash(current_block.height + 1)
-            current_block.nexthash = next_block_hash
-            db.session.commit()
+            try:
+                next_block_hash = cryptocurrency.getblockhash(current_block.height + 1)
+                current_block.nexthash = next_block_hash
+                db.session.commit()
+            # next_block_hash fails because we're already at the most recently block.
+            except JSONRPCException:
+                pass
     return total_cumulative_difficulty, outstanding_coins
 
 
@@ -64,12 +68,13 @@ def bulk_of_first_run_or_cron(name_of_flask_app, db, uniques, cryptocurrency, bl
                 if uniques['tx'][this_transaction] == EMPTY:
                     pass
             else:
-                for vout in raw_block_tx['vout']:
-                    if number != 0:
-                        total_value_out_sans_coinbase += vout['value']
-                    else:
+                for vout_num, vout in enumerate(raw_block_tx['vout']):
+                    # first output, first transaction
+                    if vout_num == 0 and number == 0:
                         # all coinbase are added to outstanding
                         outstanding_coins += vout['value']
+                    else:
+                        total_value_out_sans_coinbase += vout['value']
                     # if type is "nulldata", this address won't exist.
                     try:
                         the_address = vout['scriptPubKey']['addresses'][0]
@@ -261,11 +266,8 @@ def bulk_of_first_run_or_cron(name_of_flask_app, db, uniques, cryptocurrency, bl
                               transactions=how_many_transactions,
                               transaction_fees=block_total_fees)
     db.session.add(this_blocks_info)
-    this_block_finished = True
-    if this_block_finished:
-        db.session.commit()
-        db.session.close()
-        return total_cumulative_difficulty, outstanding_coins
+    db.session.commit()
+    db.session.close()
 
 
 class JSONRPC(object):
