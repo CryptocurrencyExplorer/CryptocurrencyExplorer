@@ -78,7 +78,7 @@ def bulk_of_first_run_or_cron(name_of_flask_app, db, uniques, cryptocurrency, bl
                                 # all coinbase are added to outstanding
                                 outstanding_coins += vout['value']
                                 coinbase_detected = True
-                                where_coinbase = (number,vout_num)
+                                where_coinbase = (number, vout_num)
                         else:
                             if not coinbase_detected:
                                 if vout['scriptPubKey']['type'] != 'nulldata':
