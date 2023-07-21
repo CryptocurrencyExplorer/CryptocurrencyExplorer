@@ -57,6 +57,7 @@ def bulk_of_first_run_or_cron(name_of_flask_app, db, uniques, cryptocurrency, bl
     # block_confirmations = cryptocurrency.getblockcount() + 1 - block_height
     for number, this_transaction in enumerate(raw_block_transactions):
         coinbase_detected = False
+        where_coinbase = (0, 0)
         try:
             raw_block_tx = cryptocurrency.getrawtransaction(this_transaction, 1)
         except JSONRPCException as e:
@@ -77,13 +78,16 @@ def bulk_of_first_run_or_cron(name_of_flask_app, db, uniques, cryptocurrency, bl
                                 # all coinbase are added to outstanding
                                 outstanding_coins += vout['value']
                                 coinbase_detected = True
+                                where_coinbase = (number,vout_num)
                         else:
                             if not coinbase_detected:
                                 if vout['scriptPubKey']['type'] != 'nulldata':
                                     outstanding_coins += vout['value']
                                     coinbase_detected = True
-                    else:
-                        total_value_out_sans_coinbase += vout['value']
+                                    where_coinbase = (number, vout_num)
+                    if coinbase_detected:
+                        if number != where_coinbase[0] and vout_num != where_coinbase[1]:
+                            total_value_out_sans_coinbase += vout['value']
                     # if type is "nulldata", this address won't exist.
                     try:
                         the_address = vout['scriptPubKey']['addresses'][0]
