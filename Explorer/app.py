@@ -169,7 +169,6 @@ class SearchForm(FlaskForm):
 
 @application.get("/")
 @application.post("/")
-@cache.cached(timeout=120)
 def index():
     form = SearchForm(request.form)
     count = request.args.get('count', default=50, type=int)

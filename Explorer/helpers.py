@@ -28,9 +28,13 @@ def pre_boogie(the_blocks, db, cryptocurrency):
                             desc('outstanding')).first().outstanding
         current_block = db.session.query(Blocks).order_by(desc('height')).first()
         if current_block.nexthash == 'PLACEHOLDER':
-            next_block_hash = cryptocurrency.getblockhash(current_block.height + 1)
-            current_block.nexthash = next_block_hash
-            db.session.commit()
+            try:
+                next_block_hash = cryptocurrency.getblockhash(current_block.height + 1)
+                current_block.nexthash = next_block_hash
+                db.session.commit()
+            # next_block_hash fails because we're already at the most recently block.
+            except JSONRPCException:
+                pass
     return total_cumulative_difficulty, outstanding_coins
 
 
@@ -261,11 +265,8 @@ def bulk_of_first_run_or_cron(name_of_flask_app, db, uniques, cryptocurrency, bl
                               transactions=how_many_transactions,
                               transaction_fees=block_total_fees)
     db.session.add(this_blocks_info)
-    this_block_finished = True
-    if this_block_finished:
-        db.session.commit()
-        db.session.close()
-        return total_cumulative_difficulty, outstanding_coins
+    db.session.commit()
+    db.session.close()
 
 
 class JSONRPC(object):
