@@ -1,5 +1,7 @@
+import datetime
 import logging
 import sys
+import time
 import click
 from logging.handlers import RotatingFileHandler
 from flask import Flask
@@ -37,7 +39,7 @@ def create_app():
 
 def process_block(current_item):
     if current_item is not None:
-        return f'Processing block {current_item} / {block_length}'
+        return f'[{time_started.year}/{time_started.month} / {time_started.day} - {time_started.hour}:{time_started.minute}:{time_started.second}] Processing block {current_item} / {block_length}'
 
 
 def lets_boogie(the_blocks, cryptocurrency):
@@ -167,6 +169,7 @@ if __name__ == '__main__':
         except AttributeError:
             all_the_blocks = range(0, most_recent_block + 1)
             block_length = len(all_the_blocks)
+            time_started = datetime.datetime.fromtimestamp(time.time())
             lets_boogie(all_the_blocks, crypto_currency)
         except OperationalError as exception:
             if 'database' in str(exception) and 'does not exist' in str(exception):

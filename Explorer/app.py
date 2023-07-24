@@ -390,7 +390,6 @@ def redirect_to_address():
 
 
 @application.get("/address/<the_address>")
-@cache.memoize(300)
 def address(the_address):
     # No reason to waste an SQL lookup if we're being redirected from /address/ ^
     if the_address == 'INVALIDADDRESS':
