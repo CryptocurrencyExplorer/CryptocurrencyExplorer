@@ -15,32 +15,9 @@ def chain_age(timestamp, genesis_time):
     return f"{difference_in_days:.2f}"
 
 
-def pre_boogie(the_blocks, db, cryptocurrency):
-    from sqlalchemy.sql import desc
-    from models import Blocks
-    if the_blocks[0] == 0:
-        total_cumulative_difficulty = decimal.Decimal(0.0)
-        outstanding_coins = decimal.Decimal(0.0)
-    else:
-        total_cumulative_difficulty = db.session.query(Blocks).order_by(
-                                      desc('cumulative_difficulty')).first().cumulative_difficulty
-        outstanding_coins = db.session.query(Blocks).order_by(
-                            desc('outstanding')).first().outstanding
-        current_block = db.session.query(Blocks).order_by(desc('height')).first()
-        if current_block.nexthash == 'PLACEHOLDER':
-            try:
-                next_block_hash = cryptocurrency.getblockhash(current_block.height + 1)
-                current_block.nexthash = next_block_hash
-                db.session.commit()
-            # next_block_hash fails because we're already at the most recently block.
-            except JSONRPCException:
-                pass
-    return total_cumulative_difficulty, outstanding_coins
-
-
-def bulk_of_first_run_or_cron(name_of_flask_app, db, uniques, cryptocurrency, block_height,
-                              total_cumulative_difficulty, outstanding_coins, the_blocks):
+def bulk_of_first_run_or_cron(name_of_flask_app, db, uniques, cryptocurrency, block_height, total_blocks):
     from models import Addresses, AddressSummary, Blocks, CoinbaseTXIn, TXIn, TXs, TxOut
+    from sqlalchemy.sql import desc
     total_value_out = decimal.Decimal(0.0)
     total_value_out_sans_coinbase = decimal.Decimal(0.0)
     tx_value_out = decimal.Decimal(0.0)
@@ -50,9 +27,26 @@ def bulk_of_first_run_or_cron(name_of_flask_app, db, uniques, cryptocurrency, bl
     block_total_fees = decimal.Decimal(0.0)
     block_raw_hash = cryptocurrency.getblockhash(block_height)
     the_block = cryptocurrency.getblock(block_raw_hash)
-    total_cumulative_difficulty += decimal.Decimal(the_block['difficulty'])
     raw_block_transactions = the_block['tx']
     how_many_transactions = len(raw_block_transactions)
+
+    if block_height == 0:
+        total_cumulative_difficulty = decimal.Decimal(0.0)
+        outstanding_coins = decimal.Decimal(0.0)
+    else:
+        total_cumulative_difficulty = db.session.query(Blocks).order_by(
+            desc('cumulative_difficulty')).first().cumulative_difficulty
+        outstanding_coins = db.session.query(Blocks).order_by(
+            desc('outstanding')).first().outstanding
+        current_block = db.session.query(Blocks).order_by(desc('height')).first()
+        if current_block.nexthash == 'PLACEHOLDER':
+            try:
+                next_block_hash = cryptocurrency.getblockhash(current_block.height + 1)
+                current_block.nexthash = next_block_hash
+                db.session.commit()
+            # next_block_hash fails because we're already at the most recently block.
+            except JSONRPCException:
+                pass
 
     # Probably better to just take the latest block's height and minus this block's height to get this
     # block_confirmations = cryptocurrency.getblockcount() + 1 - block_height
@@ -239,15 +233,19 @@ def bulk_of_first_run_or_cron(name_of_flask_app, db, uniques, cryptocurrency, bl
                 total_value_out_sans_coinbase = decimal.Decimal(0.0)
                 tx_value_out = decimal.Decimal(0.0)
                 tx_value_in = decimal.Decimal(0.0)
+    # block_height == 0
     if block_height == 0:
         prev_block_hash = uniques['genesis']['prev_hash']
         next_block_hash = the_block['nextblockhash']
-    elif block_height != the_blocks[-1]:
+    # block_height is inbetween 0 and total_blocks
+    elif total_blocks > block_height > 0:
         prev_block_hash = the_block['previousblockhash']
         next_block_hash = the_block['nextblockhash']
+    # block_height == total_blocks
     else:
         prev_block_hash = the_block['previousblockhash']
         next_block_hash = 'PLACEHOLDER'
+    total_cumulative_difficulty += decimal.Decimal(the_block['difficulty'])
     this_blocks_info = Blocks(height=the_block['height'],
                               hash=the_block['hash'],
                               version=the_block['version'],

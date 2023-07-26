@@ -15,7 +15,7 @@ from blockchain import SUPPORTED_COINS
 from config import autodetect_config, autodetect_tables
 from config import coin_name, rpcpassword, rpcport, rpcuser
 from config import app_key, csrf_key, database_uri
-from helpers import pre_boogie, bulk_of_first_run_or_cron, JSONRPC, JSONRPCException
+from helpers import bulk_of_first_run_or_cron, JSONRPC, JSONRPCException
 from models import db, Blocks
 
 EXPECTED_TABLES = {'addresses', 'address_summary', 'blocks', 'coinbasetxin', 'txs', 'txout', 'txin'}
@@ -39,27 +39,23 @@ def create_app():
 
 def process_block(current_item):
     if current_item is not None:
-        return f'[{time_started.year}/{time_started.month} / {time_started.day} - {time_started.hour}:{time_started.minute}:{time_started.second}] Processing block {current_item} / {block_length}'
+        start_time = f'[Started: {time_started.year}/{time_started.month}/{time_started.day} - {time_started.hour}:{time_started.minute}:{time_started.second}]'
+        return f'{start_time} Processing block {current_item} / {block_length}'
 
 
 def lets_boogie(the_blocks, cryptocurrency):
-    total_cumulative_difficulty, outstanding_coins = pre_boogie(the_blocks, db, cryptocurrency)
     with click.progressbar(the_blocks, item_show_func=process_block) as progress_bar:
         for block_height in progress_bar:
             try:
-                bulk_of_first_run_or_cron(first_run_app, db, uniques,
-                                          cryptocurrency, block_height,
-                                          total_cumulative_difficulty,
-                                          outstanding_coins,
-                                          the_blocks)
-            except(IntegrityError, UniqueViolation) as e:
-                first_run_app.logger.error(f"ERROR: {str(e)}")
-                db.session.rollback()
-                db.session.close()
-                sys.exit()
+                bulk_of_first_run_or_cron(first_run_app, db, uniques, cryptocurrency, block_height, block_length)
             # If disk is full we can't log anything.. so, shutdown.
             except DiskFull:
                 first_run_app.logger.error(f"ERROR: Disk full! Shutting down..")
+                db.session.rollback()
+                db.session.close()
+                sys.exit()
+            except(IntegrityError, UniqueViolation) as e:
+                first_run_app.logger.error(f"ERROR: {str(e)}")
                 db.session.rollback()
                 db.session.close()
                 sys.exit()
@@ -73,7 +69,7 @@ def detect_flask_config():
         app_key_default = True
     if csrf_key == "csrf_key":
         first_run_app.logger.error("Go into config.py and change the csrf_key!")
-        csrf_key_default = False
+        csrf_key_default = True
     if app_key_default or csrf_key_default:
         sys.exit()
 
@@ -200,11 +196,13 @@ if __name__ == '__main__':
             if most_recent_stored_block != most_recent_block:
                 all_the_blocks = range(most_recent_stored_block + 1, most_recent_block + 1)
                 block_length = most_recent_block
+                time_started = datetime.datetime.fromtimestamp(time.time())
                 lets_boogie(all_the_blocks, crypto_currency)
             else:
                 first_run_app.logger.info("Looks like you're all up-to-date")
                 sys.exit()
     except KeyboardInterrupt:
         first_run_app.logger.info("KeyboardInterrupt caught.")
+        db.session.rollback()
         db.session.close()
         sys.exit()

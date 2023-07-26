@@ -3,15 +3,18 @@ import sys
 from pathlib import Path
 from flask import Flask
 from logging.handlers import RotatingFileHandler
+from psycopg2 import errors
 from sqlalchemy.sql import desc
 import blockchain
 from config import coin_name, rpcpassword, rpcport, rpcuser
 from config import database_uri
 from sqlalchemy.exc import IntegrityError
-from helpers import pre_boogie, bulk_of_first_run_or_cron, JSONRPC
+from helpers import bulk_of_first_run_or_cron, JSONRPC
 from models import db, Blocks
 
 EXPECTED_TABLES = {'addresses', 'address_summary', 'blocks', 'coinbasetxin', 'txs', 'txout', 'txin'}
+UniqueViolation = errors.lookup('23505')
+DiskFull = errors.lookup('53100')
 
 
 def create_app():
@@ -30,14 +33,20 @@ def create_app():
 
 
 def lets_boogie(the_blocks, uniques, cryptocurrency):
-    total_cumulative_difficulty, outstanding_coins = pre_boogie(the_blocks, db, cryptocurrency)
     for block_height in the_blocks:
         try:
-            bulk_of_first_run_or_cron(cronjob, db, uniques, cryptocurrency, block_height,
-                                      total_cumulative_difficulty, outstanding_coins, the_blocks)
-        except IntegrityError as e:
+            bulk_of_first_run_or_cron(cronjob, db, uniques, cryptocurrency, block_height, the_blocks)
+        except(IntegrityError, UniqueViolation) as e:
             cronjob.logger.error(f"ERROR: {str(e)}")
             db.session.rollback()
+            db.session.close()
+            sys.exit()
+        # If disk is full we can't log anything.. so, shutdown.
+        except DiskFull:
+            cronjob.logger.error(f"ERROR: Disk full! Shutting down..")
+            db.session.rollback()
+            db.session.close()
+            sys.exit()
         else:
             cronjob.logger.info(f"committed block {block_height}")
 
