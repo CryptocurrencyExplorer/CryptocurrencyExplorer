@@ -15,21 +15,9 @@ def chain_age(timestamp, genesis_time):
     return f"{difference_in_days:.2f}"
 
 
-def bulk_of_first_run_or_cron(name_of_flask_app, db, uniques, cryptocurrency, block_height, total_blocks):
-    from models import Addresses, AddressSummary, Blocks, CoinbaseTXIn, TXIn, TXs, TxOut
+def pre_boogie(db, cryptocurrency, block_height):
     from sqlalchemy.sql import desc
-    total_value_out = decimal.Decimal(0.0)
-    total_value_out_sans_coinbase = decimal.Decimal(0.0)
-    tx_value_out = decimal.Decimal(0.0)
-    tx_value_in = decimal.Decimal(0.0)
-    prev_out_total_out = decimal.Decimal(0.0)
-    prev_out_total_out_with_fees = decimal.Decimal(0.0)
-    block_total_fees = decimal.Decimal(0.0)
-    block_raw_hash = cryptocurrency.getblockhash(block_height)
-    the_block = cryptocurrency.getblock(block_raw_hash)
-    raw_block_transactions = the_block['tx']
-    how_many_transactions = len(raw_block_transactions)
-
+    from models import Blocks
     if block_height == 0:
         total_cumulative_difficulty = decimal.Decimal(0.0)
         outstanding_coins = decimal.Decimal(0.0)
@@ -47,7 +35,24 @@ def bulk_of_first_run_or_cron(name_of_flask_app, db, uniques, cryptocurrency, bl
             # next_block_hash fails because we're already at the most recently block.
             except JSONRPCException:
                 pass
+    return outstanding_coins, total_cumulative_difficulty
 
+
+def bulk_of_first_run_or_cron(name_of_flask_app, db, uniques, cryptocurrency, block_height, total_blocks,
+                              outstanding_coins, total_cumulative_difficulty):
+    from models import Addresses, AddressSummary, Blocks, CoinbaseTXIn, TXIn, TXs, TxOut
+    total_value_out = decimal.Decimal(0.0)
+    total_value_out_sans_coinbase = decimal.Decimal(0.0)
+    tx_value_out = decimal.Decimal(0.0)
+    tx_value_in = decimal.Decimal(0.0)
+    prev_out_total_out = decimal.Decimal(0.0)
+    prev_out_total_out_with_fees = decimal.Decimal(0.0)
+    block_total_fees = decimal.Decimal(0.0)
+    block_raw_hash = cryptocurrency.getblockhash(block_height)
+    the_block = cryptocurrency.getblock(block_raw_hash)
+    raw_block_transactions = the_block['tx']
+    how_many_transactions = len(raw_block_transactions)
+    coinbase_captured = False
     # Probably better to just take the latest block's height and minus this block's height to get this
     # block_confirmations = cryptocurrency.getblockcount() + 1 - block_height
     for number, this_transaction in enumerate(raw_block_transactions):
@@ -63,14 +68,18 @@ def bulk_of_first_run_or_cron(name_of_flask_app, db, uniques, cryptocurrency, bl
                     pass
             else:
                 for vout in raw_block_tx['vout']:
-                    if number != 0:
-                        total_value_out_sans_coinbase += vout['value']
-                    else:
-                        # all coinbase are added to outstanding
-                        outstanding_coins += vout['value']
                     # if type is "nulldata", this address won't exist.
                     try:
                         the_address = vout['scriptPubKey']['addresses'][0]
+                        if number != 0:
+                            if coinbase_captured:
+                                total_value_out_sans_coinbase += vout['value']
+                            else:
+                                outstanding_coins += vout['value']
+                        else:
+                            # all coinbase are added to outstanding
+                            outstanding_coins += vout['value']
+                            coinbase_captured = True
                     except KeyError:
                         # TODO - Setting address to 'nulldata' here is wrong
                         commit_transaction_out = TxOut(block_height=block_height,
@@ -265,6 +274,7 @@ def bulk_of_first_run_or_cron(name_of_flask_app, db, uniques, cryptocurrency, bl
     db.session.add(this_blocks_info)
     db.session.commit()
     db.session.close()
+    return outstanding_coins, total_cumulative_difficulty
 
 
 class JSONRPC(object):

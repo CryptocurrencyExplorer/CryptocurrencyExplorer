@@ -15,7 +15,7 @@ from blockchain import SUPPORTED_COINS
 from config import autodetect_config, autodetect_tables
 from config import coin_name, rpcpassword, rpcport, rpcuser
 from config import app_key, csrf_key, database_uri
-from helpers import bulk_of_first_run_or_cron, JSONRPC, JSONRPCException
+from helpers import bulk_of_first_run_or_cron, JSONRPC, JSONRPCException, pre_boogie
 from models import db, Blocks
 
 EXPECTED_TABLES = {'addresses', 'address_summary', 'blocks', 'coinbasetxin', 'txs', 'txout', 'txin'}
@@ -39,15 +39,21 @@ def create_app():
 
 def process_block(current_item):
     if current_item is not None:
-        start_time = f'[Started: {time_started.year}/{time_started.month}/{time_started.day} - {time_started.hour}:{time_started.minute}:{time_started.second}]'
-        return f'{start_time} Processing block {current_item} / {block_length}'
+        return f'[{start_time}] Processing block {current_item} of {block_length}'
 
 
-def lets_boogie(the_blocks, cryptocurrency):
+def lets_boogie(the_blocks, cryptocurrency, current_block):
+    # These are returned here and in bulk_of_first_run_or_cron, because otherwise we'll need to run sql queries
+    # every single block. Which drastically slows first_run / cron down.
+    outstanding_coins, total_cumulative_difficulty = pre_boogie(db, cryptocurrency, current_block)
     with click.progressbar(the_blocks, item_show_func=process_block) as progress_bar:
         for block_height in progress_bar:
             try:
-                bulk_of_first_run_or_cron(first_run_app, db, uniques, cryptocurrency, block_height, block_length)
+                outstanding_coins, total_cumulative_difficulty = bulk_of_first_run_or_cron(first_run_app, db, uniques,
+                                                                                           cryptocurrency, block_height,
+                                                                                           block_length,
+                                                                                           outstanding_coins,
+                                                                                           total_cumulative_difficulty)
             # If disk is full we can't log anything.. so, shutdown.
             except DiskFull:
                 first_run_app.logger.error(f"ERROR: Disk full! Shutting down..")
@@ -165,8 +171,9 @@ if __name__ == '__main__':
         except AttributeError:
             all_the_blocks = range(0, most_recent_block + 1)
             block_length = len(all_the_blocks)
-            time_started = datetime.datetime.fromtimestamp(time.time())
-            lets_boogie(all_the_blocks, crypto_currency)
+            start_time = time.strftime('%Y/%m/%d - %H:%M:%S')
+            # If most_recent_stored_block fails, that means nothing exists.
+            lets_boogie(all_the_blocks, crypto_currency, 0)
         except OperationalError as exception:
             if 'database' in str(exception) and 'does not exist' in str(exception):
                 first_run_app.logger.info("You'll need to follow the documentation to create the database.")
@@ -182,10 +189,11 @@ if __name__ == '__main__':
                             db.drop_all()
                     except OperationalError as e_:
                         if 'DeadlockDetected' in str(e_):
-                            first_run_app.logger.info("Looks like you have something else occupying the database.")
-                            first_run_app.logger.info("This is probably cronjob.py. Shut it off and try this again.")
+                            first_run_app.logger.info("A deadlock was detected.")
+                            first_run_app.logger.info("This might be cronjob.py. Shut it off and try again.")
+                            sys.exit()
                         else:
-                            print(str(e_))
+                            print(f'OperationError: {str(e_)}')
                     sys.exit()
                 elif user_input in ['c', 'continue']:
                     break
@@ -196,8 +204,8 @@ if __name__ == '__main__':
             if most_recent_stored_block != most_recent_block:
                 all_the_blocks = range(most_recent_stored_block + 1, most_recent_block + 1)
                 block_length = most_recent_block
-                time_started = datetime.datetime.fromtimestamp(time.time())
-                lets_boogie(all_the_blocks, crypto_currency)
+                start_time = time.strftime('%Y/%m/%d - %H:%M:%S')
+                lets_boogie(all_the_blocks, crypto_currency, block_length)
             else:
                 first_run_app.logger.info("Looks like you're all up-to-date")
                 sys.exit()
