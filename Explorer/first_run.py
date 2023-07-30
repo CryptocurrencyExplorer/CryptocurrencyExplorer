@@ -193,6 +193,7 @@ if __name__ == '__main__':
                             first_run_app.logger.info("This might be cronjob.py. Shut it off and try again.")
                             sys.exit()
                         else:
+                            first_run_app.logger.info("OperationalError: {str(e_)}")
                             print(f'OperationError: {str(e_)}')
                     sys.exit()
                 elif user_input in ['c', 'continue']:

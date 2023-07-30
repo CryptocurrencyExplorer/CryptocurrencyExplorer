@@ -169,6 +169,7 @@ class SearchForm(FlaskForm):
 
 @application.get("/")
 @application.post("/")
+@cache.memoize(300)
 def index():
     form = SearchForm(request.form)
     count = request.args.get('count', default=50, type=int)
@@ -390,6 +391,7 @@ def redirect_to_address():
 
 
 @application.get("/address/<the_address>")
+@cache.memoize(300)
 def address(the_address):
     # No reason to waste an SQL lookup if we're being redirected from /address/ ^
     if the_address == 'INVALIDADDRESS':
@@ -675,6 +677,18 @@ def api__mempool():
                                       'error': 'invalid'}), 422)
     else:
         return make_response(jsonify(the_mempool), 200)
+
+
+@application.get("/api/peers/")
+@cache.cached(timeout=300)
+def api__peers():
+    try:
+        peers = cryptocurrency.getpeerinfo()
+    except JSONRPCException:
+        return make_response(jsonify({'message': 'There was a JSON error. Try again later',
+                                      'error': 'invalid'}), 422)
+    else:
+        return make_response(jsonify(peers), 200)
 
 
 @application.get("/api/rawtx/<transaction>/")
