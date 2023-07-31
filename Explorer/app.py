@@ -686,7 +686,7 @@ def api__last_difficulty():
     latest_difficulty = float(db.session.query(Blocks).order_by(desc('height')).first().difficulty)
     return application.response_class(mimetype='application/json',
                                       status=200,
-                                      response=json.dumps({'message': latest_difficulty,
+                                      response=json.dumps({'message': str(latest_difficulty),
                                                            'error': 'ok'}))
 
 
@@ -806,7 +806,7 @@ def api__sent_by_address(the_address):
 def api__total_coins():
     return application.response_class(mimetype='application/json',
                                       status=200,
-                                      response=json.dumps({'message': float(cryptocurrency.gettxoutsetinfo()['total_amount']),
+                                      response=json.dumps({'message': str(cryptocurrency.gettxoutsetinfo()['total_amount']),
                                                            'error': 'ok'}))
 
 
