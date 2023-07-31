@@ -9,7 +9,7 @@ import sys
 from decimal import Decimal
 from json import JSONEncoder
 from logging.handlers import RotatingFileHandler
-from flask import Flask, jsonify, make_response, send_from_directory
+from flask import Flask, json, send_from_directory
 from flask import redirect, request, url_for, render_template
 from flask_caching import Cache
 from flask_wtf import FlaskForm
@@ -56,7 +56,6 @@ def create_app(the_csrf):
     except(AttributeError, TypeError):
         prep_application.logger.error("coin_name in config.py is not a supported coin.")
         sys.exit()
-    prep_application.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
     prep_application.config['MAX_CONTENT_LENGTH'] = 1024
     # 30 days
     prep_application.config['PERMANENT_SESSION_LIFETIME'] = 2592000
@@ -592,24 +591,32 @@ def redirect_to_api__validate_address():
 @cache.memoize(300)
 def api__address_balance(the_address):
     if the_address == "INVALID_ADDRESS":
-        return make_response(jsonify({'message': 'Hi there, did you mean to put in an address?',
-                                      'error': '404'}), 404)
+        return application.response_class(mimetype='application/json',
+                                          status=404,
+                                          response=json.dumps({'message': 'Hi there, did you mean to put in an address?',
+                                                               'error': '404'}))
     address_lookup = db.session.query(AddressSummary).filter_by(address=the_address).first()
     if address_lookup is None:
-        return make_response(jsonify({'message': 'This address is invalid',
-                                      'error': '404'}), 404)
+        return application.response_class(mimetype='application/json',
+                                          status=404,
+                                          response=json.dumps({'message': 'This address is invalid',
+                                                               'error': '404'}))
     else:
         address_balance = address_lookup.balance
-        return make_response(jsonify({'message': address_balance,
-                                      'error': 'ok'}), 200)
+        return application.response_class(mimetype='application/json',
+                                          status=200,
+                                          response=json.dumps({'message': address_balance,
+                                                               'error': 'ok'}))
 
 
 @application.get("/api/blockcount/")
 @cache.cached(timeout=120)
 def api__block_count():
     most_recent_height = db.session.query(Blocks).order_by(desc('height')).first().height
-    return make_response(jsonify({'message': most_recent_height,
-                                  'error': 'ok'}), 200)
+    return application.response_class(mimetype='application/json',
+                                      status=200,
+                                      response=json.dumps({'message': most_recent_height,
+                                                           'error': 'ok'}))
 
 
 @application.get("/api/confirmations/<userinput_block_height>/")
@@ -625,25 +632,35 @@ def api__confirmations(userinput_block_height):
                 user_block_height = int(block_lookup.height)
                 latest_block_height = int(db.session.query(Blocks).order_by(desc('height')).first().height)
                 block_confirmations = (latest_block_height + 1) - user_block_height
-                return make_response(jsonify({'confirmations': block_confirmations,
-                                              'error': 'ok'}), 200)
+                return application.response_class(mimetype='application/json',
+                                                  status=200,
+                                                  response=json.dumps({'confirmations': block_confirmations,
+                                                                       'error': 'ok'}))
             else:
-                return make_response(jsonify({'message': 'This block hash/height is invalid',
-                                              'error': 'invalid'}), 422)
+                return application.response_class(mimetype='application/json',
+                                                  status=422,
+                                                  response=json.dumps({'message': 'This block hash/height is invalid',
+                                                                       'error': 'invalid'}))
         except JSONRPCException:
-            return make_response(jsonify({'message': 'This block hash/height is invalid',
-                                          'error': 'invalid'}), 422)
+            return application.response_class(mimetype='application/json',
+                                              status=422,
+                                              response=json.dumps({'message': 'This block hash/height is invalid',
+                                                                   'error': 'invalid'}))
     else:
         latest_block_height = int(db.session.query(Blocks).order_by(desc('height')).first().height)
         # check if this is a block number like 0 or something else.
         # +1 because range() goes up to but doesn't include the number, so to include it we do +1
         if userinput_block_height in range(0, latest_block_height + 1):
             block_confirmations = (latest_block_height + 1) - userinput_block_height
-            return make_response(jsonify({'confirmations': block_confirmations,
-                                          'error': 'ok'}), 200)
+            return application.response_class(mimetype='application/json',
+                                              status=200,
+                                              response=json.dumps({'confirmations': block_confirmations,
+                                                                   'error': 'ok'}))
         else:
-            return make_response(jsonify({'message': 'This block hash/height is invalid',
-                                          'error': 'invalid'}), 422)
+            return application.response_class(mimetype='application/json',
+                                              status=422,
+                                              response=json.dumps({'message': 'This block hash/height is invalid',
+                                                                   'error': 'invalid'}))
 
 
 @application.get("/api/connections/")
@@ -652,19 +669,25 @@ def api__connections():
     try:
         total_connections = cryptocurrency.getconnectioncount()
     except JSONRPCException:
-        return make_response(jsonify({'message': 'There was a JSON error. Try again later',
-                                      'error': 'invalid'}), 422)
+        return application.response_class(mimetype='application/json',
+                                          status=422,
+                                          response=json.dumps({'message': 'There was a JSON error. Try again later',
+                                                               'error': 'invalid'}))
     else:
-        return make_response(jsonify({'message': total_connections,
-                                      'error': 'ok'}), 200)
+        return application.response_class(mimetype='application/json',
+                                          status=200,
+                                          response=json.dumps({'message': total_connections,
+                                                               'error': 'ok'}))
 
 
 @application.get("/api/lastdifficulty/")
 @cache.cached(timeout=120)
 def api__last_difficulty():
     latest_difficulty = float(db.session.query(Blocks).order_by(desc('height')).first().difficulty)
-    return make_response(jsonify({'message': latest_difficulty,
-                                  'error': 'ok'}), 200)
+    return application.response_class(mimetype='application/json',
+                                      status=200,
+                                      response=json.dumps({'message': latest_difficulty,
+                                                           'error': 'ok'}))
 
 
 @application.get("/api/mempool/")
@@ -673,53 +696,75 @@ def api__mempool():
     try:
         the_mempool = cryptocurrency.getrawmempool(True)
     except JSONRPCException:
-        return make_response(jsonify({'message': 'There was a JSON error. Try again later',
-                                      'error': 'invalid'}), 422)
+        return application.response_class(mimetype='application/json',
+                                          status=422,
+                                          response=json.dumps({'message': 'There was a JSON error. Try again later',
+                                                               'error': 'invalid'}))
     else:
-        return make_response(jsonify(the_mempool), 200)
+        return application.response_class(mimetype='application/json',
+                                          status=200,
+                                          response=json.dumps(the_mempool))
 
 
 @application.get("/api/peers/")
-@cache.cached(timeout=300)
+@cache.cached(timeout=900)
 def api__peers():
     try:
         peers = cryptocurrency.getpeerinfo()
+        for peer_num, each_peer in enumerate(peers):
+            peers[peer_num]['subver'] = peers[peer_num]['subver'].strip('/')
     except JSONRPCException:
-        return make_response(jsonify({'message': 'There was a JSON error. Try again later',
-                                      'error': 'invalid'}), 422)
+        return application.response_class(mimetype='application/json',
+                                          status=422,
+                                          response=json.dumps({'message': 'There was a JSON error. Try again later',
+                                                               'error': 'invalid'}))
     else:
-        return make_response(jsonify(peers), 200)
+        return application.response_class(mimetype='application/json',
+                                          status=200,
+                                          response=json.dumps(peers))
 
 
 @application.get("/api/rawtx/<transaction>/")
 @cache.memoize(300)
 def api__rawtx(transaction):
     if transaction == "INVALIDTRANSACTION":
-        return make_response(jsonify({'message': 'This transaction is invalid',
-                                      'error': 'invalid'}), 422)
+        return application.response_class(mimetype='application/json',
+                                          status=422,
+                                          response=json.dumps({'message': 'This transaction is invalid',
+                                                               'error': 'invalid'}))
     try:
         the_transaction = cryptocurrency.getrawtransaction(transaction, 1)
     except JSONRPCException:
-        return make_response(jsonify({'message': 'This transaction is invalid',
-                                      'error': 'invalid'}), 422)
+        return application.response_class(mimetype='application/json',
+                                          status=422,
+                                          response=json.dumps({'message': 'This transaction is invalid',
+                                                               'error': 'invalid'}))
     else:
-        return make_response(jsonify(the_transaction), 200)
+        return application.response_class(mimetype='application/json',
+                                          status=200,
+                                          response=json.dumps({the_transaction}))
 
 
 @application.get("/api/receivedbyaddress/<the_address>/")
 @cache.memoize(300)
 def api__received_by_address(the_address):
     if the_address == "INVALID_ADDRESS":
-        return make_response(jsonify({'message': 'Hi there, did you mean to put in an address?',
-                                      'error': '404'}), 404)
+        return application.response_class(mimetype='application/json',
+                                          status=404,
+                                          response=json.dumps({'message': 'Hi there, did you mean to put in an address?',
+                                                               'error': '404'}))
     address_lookup = db.session.query(AddressSummary).filter_by(address=the_address).first()
     if address_lookup is None:
-        return make_response(jsonify({'message': 'This address is invalid',
-                                      'error': '404'}), 404)
+        return application.response_class(mimetype='application/json',
+                                          status=404,
+                                          response=json.dumps({'message': 'This address is invalid',
+                                                               'error': '404'}))
     else:
         address_received = address_lookup.received
-        return make_response(jsonify({'message': address_received,
-                                      'error': 'ok'}), 200)
+        return application.response_class(mimetype='application/json',
+                                          status=200,
+                                          response=json.dumps({'message': address_received,
+                                                               'error': 'ok'}))
 
 
 @application.get("/api/richlist/")
@@ -729,49 +774,66 @@ def api__rich_list():
     the_rich_list = {}
     for the_index, the_address in enumerate(the_top):
         the_rich_list[the_index] = {"address": the_address.address, "balance": the_address.balance}
-    return make_response(jsonify({'message': the_rich_list,
-                                  'error': 'ok'}), 200)
+    return application.response_class(mimetype='application/json',
+                                      status=200,
+                                      response=json.dumps({'message': the_rich_list, 'error': 'ok'}))
 
 
 @application.get("/api/sentbyaddress/<the_address>/")
 @cache.memoize(300)
 def api__sent_by_address(the_address):
     if the_address == "INVALID_ADDRESS":
-        return make_response(jsonify({'message': 'Hi there, did you mean to put in an address?',
-                                      'error': '404'}), 404)
+        return application.response_class(mimetype='application/json',
+                                          status=404,
+                                          response=json.dumps({'message': 'Hi there, did you mean to put in an address?',
+                                                               'error': '404'}))
     address_lookup = db.session.query(AddressSummary).filter_by(address=the_address).first()
     if address_lookup is None:
-        return make_response(jsonify({'message': 'This address is invalid',
-                                      'error': '404'}), 404)
+        return application.response_class(mimetype='application/json',
+                                          status=404,
+                                          response=json.dumps({'message': 'This address is invalid',
+                                                               'error': '404'}))
     else:
         address_sent = address_lookup.sent
-        return make_response(jsonify({'message': address_sent,
-                                      'error': 'ok'}), 200)
+        return application.response_class(mimetype='application/json',
+                                          status=200,
+                                          response=json.dumps({'message': address_sent,
+                                                               'error': 'ok'}))
 
 
 @application.get("/api/totalcoins/")
 @cache.cached(timeout=300)
 def api__total_coins():
-    return make_response(jsonify({'message': float(cryptocurrency.gettxoutsetinfo()['total_amount']),
-                                  'error': 'ok'}), 200)
+    return application.response_class(mimetype='application/json',
+                                      status=200,
+                                      response=json.dumps({'message': float(cryptocurrency.gettxoutsetinfo()['total_amount']),
+                                                           'error': 'ok'}))
 
 
 @application.get("/api/totaltransactions/")
 @cache.cached(timeout=300)
 def api__total_transactions():
-    return make_response(jsonify({'message': cryptocurrency.gettxoutsetinfo()['transactions'],
-                                  'error': 'ok'}), 200)
+    return application.response_class(mimetype='application/json',
+                                      status=200,
+                                      response=json.dumps({'message': cryptocurrency.gettxoutsetinfo()['transactions'],
+                                                           'error': 'ok'}))
 
 
 @application.get("/api/validateaddress/<the_address>/")
 @cache.memoize(300)
 def api__validate_address(the_address):
     if the_address == "INVALID_ADDRESS":
-        return make_response(jsonify({'message': 'Hi there, did you mean to put in an address?',
-                                      'error': '404'}), 404)
+        return application.response_class(mimetype='application/json',
+                                          status=404,
+                                          response=json.dumps({'message': 'Hi there, did you mean to put in an address?',
+                                                               'error': '404'}))
     if cryptocurrency.validateaddress(the_address)['isvalid']:
-        return make_response(jsonify({'message': 'valid',
-                                      'error': 'ok'}), 200)
+        return application.response_class(mimetype='application/json',
+                                          status=200,
+                                          response=json.dumps({'message': 'valid',
+                                                               'error': 'ok'}))
     else:
-        return make_response(jsonify({'message': 'invalid',
-                                      'error': 'this string cannot be verified as an address'}), 422)
+        return application.response_class(mimetype='application/json',
+                                          status=422,
+                                          response=json.dumps({'message': 'invalid',
+                                                               'error': 'this string cannot be verified as an address'}))
