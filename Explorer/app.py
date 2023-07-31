@@ -760,7 +760,7 @@ def api__received_by_address(the_address):
                                           response=json.dumps({'message': 'This address is invalid',
                                                                'error': '404'}))
     else:
-        address_received = address_lookup.received
+        address_received = str(address_lookup.received)
         return application.response_class(mimetype='application/json',
                                           status=200,
                                           response=json.dumps({'message': address_received,
