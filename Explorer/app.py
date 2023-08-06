@@ -742,7 +742,7 @@ def api__rawtx(transaction):
     else:
         return application.response_class(mimetype='application/json',
                                           status=200,
-                                          response=json.dumps({the_transaction}))
+                                          response=json.dumps(the_transaction))
 
 
 @application.get("/api/receivedbyaddress/<the_address>/")
