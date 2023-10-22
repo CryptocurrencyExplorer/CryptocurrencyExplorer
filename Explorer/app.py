@@ -168,8 +168,10 @@ class SearchForm(FlaskForm):
 
 @application.get("/")
 @application.post("/")
-@cache.memoize(300)
+# @cache.memoize(300)
 def index():
+    clean_search = ''
+    valid_search_characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789:'
     form = SearchForm(request.form)
     count = request.args.get('count', default=50, type=int)
     try:
@@ -199,9 +201,12 @@ def index():
         tx_prefixes = ('transaction:', 't:', 'tx:', 'thash:')
         if form.validate_on_submit():
             if 76 >= len(form.search.data) >= 1:
-                if form.search.data.startswith(address_prefixes):
-                    if 72 >= len(form.search.data) >= 6:
-                        the_address = ''.join(form.search.data.split(':')[1:])
+                for each_character in form.search.data:
+                    if each_character in valid_search_characters:
+                        clean_search += each_character
+                if clean_search.startswith(address_prefixes):
+                    if 72 >= len(clean_search) >= 6:
+                        the_address = ''.join(clean_search.split(':')[1:])
                         address_lookup = db.session.query(AddressSummary).filter(AddressSummary.address.ilike(f"%{the_address}%")).all()
                         if address_lookup:
                             if len(address_lookup) == 1:
@@ -234,16 +239,16 @@ def index():
                                                latest_block=latest_block_height,
                                                chain_age=chain_age,
                                                genesis_time=genesis_timestamp), 200
-                elif form.search.data.startswith(block_prefixes):
-                    if 70 >= len(form.search.data) >= 1:
-                        the_block = ''.join(form.search.data.split(':')[1:])
+                elif clean_search.startswith(block_prefixes):
+                    if 70 >= len(clean_search) >= 1:
+                        the_block = ''.join(clean_search.split(':')[1:])
                         try:
                             if int(the_block) in range(0, latest_block_height + 1):
                                 return redirect(url_for('block', block_hash_or_height=the_block))
                             else:
                                 raise ValueError
                         except ValueError:
-                            if 70 >= len(form.search.data) >= 6:
+                            if 70 >= len(clean_search) >= 6:
                                 block_lookup = db.session.query(Blocks).filter(Blocks.hash.like(f"%{the_block}%")).all()
                                 if len(block_lookup) == 1:
                                     return redirect(url_for('block', block_hash_or_height=block_lookup[0].hash))
@@ -264,9 +269,9 @@ def index():
                                                            latest_block=latest_block_height,
                                                            chain_age=chain_age,
                                                            genesis_time=genesis_timestamp), 200
-                elif form.search.data.startswith(tx_prefixes):
-                    if 76 >= len(form.search.data) >= 6:
-                        the_tx = ''.join(form.search.data.split(':')[1:])
+                elif clean_search.startswith(tx_prefixes):
+                    if 76 >= len(clean_search) >= 6:
+                        the_tx = ''.join(clean_search.split(':')[1:])
                         tx_lookup = db.session.query(TXs).filter(TXs.txid.like(f"%{the_tx}%")).all()
                         if tx_lookup:
                             if len(tx_lookup) == 1:
@@ -301,12 +306,12 @@ def index():
                                                genesis_time=genesis_timestamp), 200
                 else:
                     try:
-                        input_data = int(form.search.data)
+                        input_data = int(clean_search)
                     except ValueError:
-                        if 64 >= len(form.search.data) >= 6:
-                            address_like = db.session.query(AddressSummary).filter(AddressSummary.address.ilike(f"%{form.search.data}%")).all()
+                        if 64 >= len(clean_search) >= 6:
+                            address_like = db.session.query(AddressSummary).filter(AddressSummary.address.ilike(f"%{clean_search}%")).all()
                             address_len = len(address_like)
-                            input_data = form.search.data.lower()
+                            input_data = clean_search.lower()
                             tx_like = db.session.query(TXs).filter(TXs.txid.like(f"%{input_data}%")).all()
                             tx_len = len(tx_like)
                             block_like = db.session.query(Blocks).filter(Blocks.hash.like(f"%{input_data}%")).all()
