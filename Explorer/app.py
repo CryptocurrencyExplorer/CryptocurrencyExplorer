@@ -141,13 +141,13 @@ def not_found(e):
 
 
 @application.errorhandler(413)
-def payload_too_large():
+def payload_too_large(e):
     error = f'payload too large'
     return render_template("404.html", error=error), 413
 
 
 @application.errorhandler(414)
-def uri_too_large():
+def uri_too_large(e):
     error = f'URI too large'
     return render_template("404.html", error=error), 414
 
